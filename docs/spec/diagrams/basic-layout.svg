@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 545" width="600" height="545" font-family="Helvetica, Arial, sans-serif" font-size="10">
+<title>Calculator, basic mode: window geometry in points</title>
+<rect width="600" height="545" fill="#ffffff"/>
+<defs><marker id="a" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 6 3 0 6z" fill="#c0392b"/></marker></defs>
+<g transform="translate(90 40)">
+<rect x="0" y="0" width="230" height="408" rx="16" fill="#272727" stroke="#060606"/>
+<line x1="0" y1="52" x2="230" y2="52" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<circle cx="26" cy="26" r="7" fill="#ff5f57"/>
+<circle cx="49" cy="26" r="7" fill="#febc2e"/>
+<circle cx="72" cy="26" r="7" fill="#28c840"/>
+<circle cx="114" cy="26" r="18" fill="#444545" stroke="#0f0f0f"/>
+<circle cx="206" cy="26" r="18" fill="#444545" stroke="#0f0f0f"/>
+<rect x="10" y="86" width="210" height="42" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<text x="218" y="119" text-anchor="end" font-size="34" fill="#dedede">0</text>
+<circle cx="34" cy="157" r="24" fill="#919191" stroke="#0d0d0d"/>
+<text x="34" y="163" text-anchor="middle" font-size="17" fill="#ffffff">⌫</text>
+<circle cx="88" cy="157" r="24" fill="#919191" stroke="#0d0d0d"/>
+<text x="88" y="163" text-anchor="middle" font-size="17" fill="#ffffff">AC</text>
+<circle cx="142" cy="157" r="24" fill="#919191" stroke="#0d0d0d"/>
+<text x="142" y="163" text-anchor="middle" font-size="17" fill="#ffffff">%</text>
+<circle cx="196" cy="157" r="24" fill="#ff8b00" stroke="#0d0d0d"/>
+<text x="196" y="163" text-anchor="middle" font-size="17" fill="#ffffff">÷</text>
+<circle cx="34" cy="211" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="34" y="217" text-anchor="middle" font-size="17" fill="#ffffff">7</text>
+<circle cx="88" cy="211" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="88" y="217" text-anchor="middle" font-size="17" fill="#ffffff">8</text>
+<circle cx="142" cy="211" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="142" y="217" text-anchor="middle" font-size="17" fill="#ffffff">9</text>
+<circle cx="196" cy="211" r="24" fill="#ff8b00" stroke="#0d0d0d"/>
+<text x="196" y="217" text-anchor="middle" font-size="17" fill="#ffffff">×</text>
+<circle cx="34" cy="265" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="34" y="271" text-anchor="middle" font-size="17" fill="#ffffff">4</text>
+<circle cx="88" cy="265" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="88" y="271" text-anchor="middle" font-size="17" fill="#ffffff">5</text>
+<circle cx="142" cy="265" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="142" y="271" text-anchor="middle" font-size="17" fill="#ffffff">6</text>
+<circle cx="196" cy="265" r="24" fill="#ff8b00" stroke="#0d0d0d"/>
+<text x="196" y="271" text-anchor="middle" font-size="17" fill="#ffffff">−</text>
+<circle cx="34" cy="319" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="34" y="325" text-anchor="middle" font-size="17" fill="#ffffff">1</text>
+<circle cx="88" cy="319" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="88" y="325" text-anchor="middle" font-size="17" fill="#ffffff">2</text>
+<circle cx="142" cy="319" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="142" y="325" text-anchor="middle" font-size="17" fill="#ffffff">3</text>
+<circle cx="196" cy="319" r="24" fill="#ff8b00" stroke="#0d0d0d"/>
+<text x="196" y="325" text-anchor="middle" font-size="17" fill="#ffffff">+</text>
+<circle cx="34" cy="373" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="34" y="379" text-anchor="middle" font-size="17" fill="#ffffff">±</text>
+<circle cx="88" cy="373" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="88" y="379" text-anchor="middle" font-size="17" fill="#ffffff">0</text>
+<circle cx="142" cy="373" r="24" fill="#6a6a6a" stroke="#0d0d0d"/>
+<text x="142" y="379" text-anchor="middle" font-size="17" fill="#ffffff">.</text>
+<circle cx="196" cy="373" r="24" fill="#ff8b00" stroke="#0d0d0d"/>
+<text x="196" y="379" text-anchor="middle" font-size="17" fill="#ffffff">=</text>
+</g>
+<line x1="90" y1="26" x2="320" y2="26" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="205.0" y="22" text-anchor="middle" fill="#c0392b">230</text>
+<line x1="40" y1="40" x2="40" y2="448" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="36" y="244.0" text-anchor="end" fill="#c0392b">408</text>
+<line x1="70" y1="40" x2="70" y2="92" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="66" y="70" text-anchor="end" fill="#c0392b">52</text>
+<line x1="55" y1="40" x2="55" y2="173" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="51" y="140" text-anchor="end" fill="#c0392b">133</text>
+<line x1="100" y1="462" x2="148" y2="462" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="124" y="476" text-anchor="middle" fill="#c0392b">48</text>
+<line x1="148" y1="462" x2="154" y2="462" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="0" y="0" text-anchor="middle" fill="#c0392b"></text>
+<text x="151" y="476" text-anchor="middle" fill="#c0392b">6</text>
+<line x1="90" y1="488" x2="100" y2="488" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="95" y="502" text-anchor="middle" fill="#c0392b">10</text>
+<line x1="100" y1="488" x2="154" y2="488" stroke="#c0392b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="127" y="502" text-anchor="middle" fill="#c0392b">pitch 54</text>
+<text x="334" y="66" fill="#333333">toolbar 52: window buttons x 18/41/64,</text>
+<text x="334" y="78" fill="#333333">history 36 circle at x 96, mode at x 188</text>
+<text x="334" y="140" fill="#333333">display 210 × 42 at (10, 86)</text>
+<text x="334" y="152" fill="#333333">text right edge x 218, baseline 119</text>
+<text x="334" y="197" fill="#333333">keys 48 circles, rows from y 133</text>
+<text x="334" y="209" fill="#333333">margin 10 left / right / bottom</text>
+<text x="334" y="370" fill="#333333">fills: function #919191,</text>
+<text x="334" y="382" fill="#333333">digit #6a6a6a, operator #ff8b00,</text>
+<text x="334" y="394" fill="#333333">window #272727</text>
+<text x="10" y="536" fill="#666666">Calculator basic mode, 230 × 408 pt (CA-01). Corner radius drawn for shape only, not measured.</text>
+</svg>
