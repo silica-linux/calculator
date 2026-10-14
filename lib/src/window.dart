@@ -83,7 +83,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
 
   void setMode(CalcMode next) {
     if (next == mode) return;
-    // The mode switch is instant: size and keypad change in one frame (ca05-modes).
+    // The mode switch is instant: size and keypad change in one frame (silica-reference CA-01).
     setState(() {
       mode = next;
       _menuAt = null;
@@ -308,7 +308,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                   glyph: Glyph.calculator,
                   hover: true,
                   tooltip: l.modeButton,
-                  // Under the button (ca09-mode-menu: left edge at the button, top at the
+                  // Under the button (silica-reference CA-01: left edge at the button, top at the
                   // toolbar's bottom). The reference menu extends past the window; ours stays
                   // inside it until menus are separate surfaces (silica-desktop#4).
                   onTap: () => setState(() {

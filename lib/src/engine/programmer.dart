@@ -1,4 +1,4 @@
-// The programmer mode (calculator.md › Display, ca06-programmer): 64-bit integers shown in
+// The programmer mode (calculator.md › Display, CA-01): 64-bit integers shown in
 // base 8, 10 or 16, binary operators with precedence, and immediate one-operand operations
 // (NOT, NEG, shifts and rotations by one, byte flips) applied to the current number.
 

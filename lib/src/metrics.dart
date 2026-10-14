@@ -111,15 +111,15 @@ const Color secondOn = Color(0xFF7E7E7F);
 /// The 1 pt dark outline around every key.
 const Color keyOutline = Color(0xFF0D0D0D);
 
-/// Release fade: ~200 ms for digits and functions, ~330 ms for operators (ca11-press).
+/// Release fade: ~200 ms for digits and functions, ~330 ms for operators (silica-reference CA-01).
 const Duration fadeDigit = Duration(milliseconds: 200);
 const Duration fadeOperator = Duration(milliseconds: 330);
 
-/// A typed key lights the matching key for ~80 ms, without a fade (ca03-typing).
+/// A typed key lights the matching key for ~80 ms, without a fade (silica-reference CA-01).
 const Duration keyboardFlash = Duration(milliseconds: 80);
 
 /// Programmer mode: divider at y 132, segmented controls 24 pt high at y 137, the bit
-/// editor rows below (ca06-programmer).
+/// editor rows below (silica-reference CA-01).
 const double programmerDividerY = 132;
 const Color programmerDivider = Color(0xFF3C3C3D);
 const double segmentTop = 137;

@@ -176,7 +176,7 @@ void main() {
         )
         .active;
     expect(active(), isTrue);
-    // Inactive: functions and operators turn gray (ca01-basic-inactive).
+    // Inactive: functions and operators turn gray (silica-reference CA-01).
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     await tester.pump();
     expect(active(), isFalse);

@@ -1,4 +1,4 @@
-// The programmer mode panel under the display (ca06-programmer): a divider at y 132, three
+// The programmer mode panel under the display (silica-reference CA-01): a divider at y 132, three
 // segmented controls 24 pt high at y 137 (encoding 150 wide at x 10, the binary switch 126 at
 // x 198, the base 117 at x 361 with the chosen base in orange) and the bit editor: two rows of
 // 32 bits in groups of four (groups at a 61.7 pt pitch from x 12, digits baselines 189 and

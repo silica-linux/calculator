@@ -1,4 +1,4 @@
-// The keypads of the three modes, row by row (ca01-basic, ca05-scientific, ca06-programmer).
+// The keypads of the three modes, row by row (silica-reference CA-01).
 
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
