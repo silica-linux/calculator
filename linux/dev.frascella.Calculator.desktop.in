@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=Calculator
+Name[it]=Calcolatrice
+GenericName=Calculator
+GenericName[it]=Calcolatrice
+Comment=Basic, scientific and programmer calculations
+Comment[it]=Calcoli di base, scientifici e per programmatori
+Exec=@EMBEDDER@ --size 230x408 --title Calculator --app-id dev.frascella.Calculator @BUNDLE@
+Icon=accessories-calculator
+X-Silica-Icon=calculator
+StartupWMClass=dev.frascella.Calculator
+Categories=Utility;Calculator;
+Keywords=calculator;math;arithmetic;
+Keywords[it]=calcolatrice;matematica;conti;
+Terminal=false
+OnlyShowIn=Silica;

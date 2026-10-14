@@ -1,0 +1,18 @@
+{
+  "@@locale": "it",
+  "appTitle": "Calcolatrice",
+  "modeBasic": "Base",
+  "modeScientific": "Scientifica",
+  "modeProgrammer": "Programmatore",
+  "modeButton": "Modalità",
+  "sidebarButton": "Cronologia",
+  "error": "Errore",
+  "secondTooltip": "Passa alle funzioni secondarie dei tasti (anche tenendo premuto Maiuscole)",
+  "radiansIndicator": "Rad",
+  "hideBinary": "Nascondi binario",
+  "showBinary": "Mostra binario",
+  "copy": "Copia",
+  "paste": "Incolla",
+  "keyClearAll": "AC",
+  "keyClear": "C"
+}
