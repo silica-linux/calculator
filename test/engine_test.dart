@@ -283,6 +283,20 @@ void main() {
       expect(p.error, isTrue);
     });
 
+    test('parentheses change the grouping', () {
+      final p = ProgrammerCalculator()..setBase(10);
+      p.open();
+      p.digits('2');
+      p.operator(ProgOp.add);
+      p.digits('3');
+      p.close();
+      p.operator(ProgOp.multiply);
+      p.digits('4');
+      expect(p.mainText(), '(2+3)×4');
+      p.equals();
+      expect(p.mainText(), '20');
+    });
+
     test('the character of the number', () {
       final p = ProgrammerCalculator()..digits('41');
       expect(p.character(), 'A');

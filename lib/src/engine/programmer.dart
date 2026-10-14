@@ -106,28 +106,74 @@ BigInt _swapBytes(BigInt a, int bytes) {
   return _wrap(rest | out);
 }
 
-/// The value of `values[0] ops[0] values[1] …` with precedence.
-BigInt evaluateProgrammer(List<BigInt> values, List<ProgOp> ops) {
-  if (values.isEmpty) return BigInt.zero;
-  final output = <BigInt>[values.first];
-  final stack = <ProgOp>[];
+/// A token of the programmer expression.
+sealed class ProgToken {
+  const ProgToken();
+}
+
+class ProgValue extends ProgToken {
+  const ProgValue(this.value);
+  final BigInt value;
+}
+
+class ProgOperator extends ProgToken {
+  const ProgOperator(this.op);
+  final ProgOp op;
+}
+
+class ProgOpen extends ProgToken {
+  const ProgOpen();
+}
+
+class ProgClose extends ProgToken {
+  const ProgClose();
+}
+
+/// The value of the tokens with precedence and parentheses (shunting-yard); unclosed
+/// parentheses close at the end, a trailing operator is ignored.
+BigInt evaluateProgrammer(List<ProgToken> tokens) {
+  final output = <BigInt>[];
+  final stack = <ProgToken>[];
   void reduce() {
-    final op = stack.removeLast();
+    final op = (stack.removeLast() as ProgOperator).op;
+    if (output.length < 2) throw const CalcError('missing operand');
     final b = output.removeLast();
     final a = output.removeLast();
     output.add(applyBinary(op, a, b));
   }
 
-  for (var i = 0; i < ops.length && i + 1 < values.length; i++) {
-    while (stack.isNotEmpty && stack.last.level >= ops[i].level) {
+  final list = [...tokens];
+  while (list.isNotEmpty && list.last is ProgOperator) {
+    list.removeLast();
+  }
+  for (final t in list) {
+    switch (t) {
+      case ProgValue(:final value):
+        output.add(value);
+      case ProgOperator(:final op):
+        while (stack.isNotEmpty &&
+            stack.last is ProgOperator &&
+            (stack.last as ProgOperator).op.level >= op.level) {
+          reduce();
+        }
+        stack.add(t);
+      case ProgOpen():
+        stack.add(t);
+      case ProgClose():
+        while (stack.isNotEmpty && stack.last is! ProgOpen) {
+          reduce();
+        }
+        if (stack.isNotEmpty) stack.removeLast();
+    }
+  }
+  while (stack.isNotEmpty) {
+    if (stack.last is ProgOpen) {
+      stack.removeLast();
+    } else {
       reduce();
     }
-    stack.add(ops[i]);
-    output.add(values[i + 1]);
   }
-  while (stack.isNotEmpty && output.length >= 2) {
-    reduce();
-  }
+  if (output.isEmpty) return BigInt.zero;
   return output.last;
 }
 
@@ -139,8 +185,7 @@ class ProgrammerCalculator extends ChangeNotifier {
   Encoding encoding = Encoding.ascii;
   bool showBinary = true;
 
-  final List<BigInt> values = [];
-  final List<ProgOp> ops = [];
+  final List<ProgToken> tokens = [];
 
   /// The number being typed, in the current base.
   String entry = '';
@@ -149,15 +194,22 @@ class ProgrammerCalculator extends ChangeNotifier {
   BigInt result = BigInt.zero;
   bool error = false;
 
-  bool get showsClear => entry.isNotEmpty || values.isNotEmpty;
+  bool get showsClear => entry.isNotEmpty || tokens.isNotEmpty;
 
   void _changed() => notifyListeners();
+
+  bool get _lastIsOperand =>
+      tokens.isNotEmpty &&
+      (tokens.last is ProgValue || tokens.last is ProgClose);
 
   /// The number the bit editor and the one-operand keys work on.
   BigInt get current {
     if (entry.isNotEmpty) return BigInt.parse(entry, radix: base);
     if (evaluated) return result;
-    return values.length > ops.length ? values.last : BigInt.zero;
+    if (tokens.isNotEmpty && tokens.last is ProgValue) {
+      return (tokens.last as ProgValue).value;
+    }
+    return BigInt.zero;
   }
 
   bool acceptsDigit(String d) {
@@ -168,27 +220,36 @@ class ProgrammerCalculator extends ChangeNotifier {
   String mainText() {
     if (evaluated) return formatInBase(result, base);
     final out = StringBuffer();
-    for (var i = 0; i < values.length; i++) {
-      out.write(formatInBase(values[i], base));
-      if (i < ops.length) out.write(ops[i].symbol);
+    for (final t in tokens) {
+      out.write(switch (t) {
+        ProgValue(:final value) => formatInBase(value, base),
+        ProgOperator(:final op) => op.symbol,
+        ProgOpen() => '(',
+        ProgClose() => ')',
+      });
     }
-    if (values.length == ops.length) out.write(entry.toUpperCase());
+    out.write(entry.toUpperCase());
     final text = out.toString();
     return text.isEmpty ? '0' : text;
   }
 
   void _startOver() {
-    values.clear();
-    ops.clear();
+    tokens.clear();
     entry = '';
     evaluated = false;
     error = false;
   }
 
+  void _commitEntry() {
+    if (entry.isEmpty) return;
+    tokens.add(ProgValue(BigInt.parse(entry, radix: base)));
+    entry = '';
+  }
+
   /// `digits` is one digit or a pair (FF, 00).
   void digits(String digits) {
     if (evaluated || error) _startOver();
-    if (values.length > ops.length) return;
+    if (_lastIsOperand) return;
     for (final d in digits.split('')) {
       if (!acceptsDigit(d)) return;
     }
@@ -204,32 +265,53 @@ class ProgrammerCalculator extends ChangeNotifier {
     if (evaluated) {
       final r = result;
       _startOver();
-      values.add(r);
-    } else if (entry.isNotEmpty) {
-      values.add(BigInt.parse(entry, radix: base));
-      entry = '';
+      tokens.add(ProgValue(r));
     }
-    if (values.isEmpty) values.add(BigInt.zero);
-    if (ops.length == values.length) {
-      ops[ops.length - 1] = op;
+    _commitEntry();
+    if (tokens.isEmpty) tokens.add(ProgValue(BigInt.zero));
+    final last = tokens.last;
+    if (last is ProgOperator) {
+      tokens[tokens.length - 1] = ProgOperator(op);
+    } else if (last is ProgOpen) {
+      return;
     } else {
-      ops.add(op);
+      tokens.add(ProgOperator(op));
     }
+    _changed();
+  }
+
+  void open() {
+    if (evaluated || error) _startOver();
+    if (entry.isNotEmpty || _lastIsOperand) return;
+    tokens.add(const ProgOpen());
+    _changed();
+  }
+
+  void close() {
+    if (evaluated || error) return;
+    var depth = 0;
+    for (final t in tokens) {
+      if (t is ProgOpen) depth++;
+      if (t is ProgClose) depth--;
+    }
+    if (depth <= 0) return;
+    _commitEntry();
+    if (!_lastIsOperand) return;
+    tokens.add(const ProgClose());
     _changed();
   }
 
   void unary(ProgUnary op) {
     if (error) return;
-    final value = applyUnary(op, current);
-    _setCurrent(value);
+    _setCurrent(applyUnary(op, current));
   }
 
   void _setCurrent(BigInt value) {
     if (evaluated) {
       result = value;
-    } else if (values.length > ops.length) {
-      values[values.length - 1] = value;
-    } else {
+    } else if (entry.isEmpty && tokens.isNotEmpty && tokens.last is ProgValue) {
+      tokens[tokens.length - 1] = ProgValue(value);
+    } else if (!_lastIsOperand) {
       entry = formatInBase(value, base).toLowerCase();
     }
     _changed();
@@ -247,19 +329,15 @@ class ProgrammerCalculator extends ChangeNotifier {
       return;
     }
     if (evaluated) return;
-    if (entry.isNotEmpty) {
-      values.add(BigInt.parse(entry, radix: base));
-      entry = '';
-    }
-    if (values.isEmpty) return;
+    _commitEntry();
+    if (tokens.isEmpty) return;
     try {
-      result = evaluateProgrammer(values, ops);
+      result = evaluateProgrammer(tokens);
       evaluated = true;
     } on CalcError {
       error = true;
     }
-    values.clear();
-    ops.clear();
+    tokens.clear();
     _changed();
   }
 
@@ -273,9 +351,12 @@ class ProgrammerCalculator extends ChangeNotifier {
     if (evaluated || error) return;
     if (entry.isNotEmpty) {
       entry = entry.substring(0, entry.length - 1);
-    } else if (ops.length == values.length && ops.isNotEmpty) {
-      ops.removeLast();
-      entry = formatInBase(values.removeLast(), base).toLowerCase();
+    } else if (tokens.isNotEmpty) {
+      final last = tokens.removeLast();
+      if (last is ProgValue) {
+        final text = formatInBase(last.value, base).toLowerCase();
+        entry = text.substring(0, text.length - 1);
+      }
     }
     _changed();
   }
@@ -302,7 +383,7 @@ class ProgrammerCalculator extends ChangeNotifier {
   /// The character of the current number, if it is printable in the chosen encoding.
   String? character() {
     final v = current;
-    final limit = encoding == Encoding.ascii ? 0x7f : 0x10ffff;
+    final limit = encoding == Encoding.ascii ? 0x7e : 0x10ffff;
     if (v < BigInt.from(0x20) || v > BigInt.from(limit)) return null;
     final code = v.toInt();
     if (code == 0x7f || (code >= 0xd800 && code <= 0xdfff)) return null;
@@ -316,7 +397,7 @@ class ProgrammerCalculator extends ChangeNotifier {
     final v = BigInt.tryParse(t, radix: base);
     if (v == null || v.isNegative || v > _mask) return false;
     if (evaluated || error) _startOver();
-    if (values.length > ops.length) return false;
+    if (_lastIsOperand) return false;
     entry = v.toRadixString(base);
     _changed();
     return true;
