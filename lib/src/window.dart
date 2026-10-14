@@ -22,22 +22,9 @@ import 'keys.dart';
 import 'metrics.dart';
 import 'programmer_panel.dart';
 
-/// Asks the embedder for the window size of a mode. False while Silica cannot resize a
-/// window from the app (silica-desktop#1): the content then keeps the measured layout
-/// anchored at the top-left corner.
-Future<bool> requestWindowSize(Size size) async {
-  try {
-    final reply = await SilicaWindow.channel.invokeMethod<Object?>('setSize', {
-      'width': size.width,
-      'height': size.height,
-    });
-    return reply == true;
-  } on MissingPluginException {
-    return false;
-  } on PlatformException {
-    return false;
-  }
-}
+/// Fixes the window to the size of a mode (fixed sizes per mode, calculator.md): the limits
+/// and the size together, so the window cannot be resized and the zoom button is disabled.
+Future<bool> requestWindowSize(Size size) => SilicaWindow.setFixedSize(size);
 
 class CalculatorWindow extends StatefulWidget {
   const CalculatorWindow({super.key, this.initialMode = CalcMode.basic});
@@ -74,6 +61,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   void initState() {
     super.initState();
     _lifecycle;
+    unawaited(requestWindowSize(windowSize[widget.initialMode]!));
     decimal.addListener(_changed);
     programmer.addListener(_changed);
   }
