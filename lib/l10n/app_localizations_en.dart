@@ -53,4 +53,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyClear => 'C';
+
+  @override
+  String get menuEdit => 'Edit';
+
+  @override
+  String get menuView => 'View';
+
+  @override
+  String get menuWindow => 'Window';
+
+  @override
+  String get menuHelp => 'Help';
+
+  @override
+  String get decimalPlaces => 'Decimal Places';
+
+  @override
+  String get hideThousands => 'Hide Thousands Separators';
+
+  @override
+  String get showThousands => 'Show Thousands Separators';
 }

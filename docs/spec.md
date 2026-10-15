@@ -63,17 +63,34 @@ What the app does and how it behaves. Measurements: `silica-reference` › `calc
 | `calculator.equals` | Return, = | evaluate |
 | `calculator.clear` | Esc, Delete | clear |
 | `calculator.backspace` | Backspace | delete the last character |
+| `calculator.decimal_places` | — | View › Decimal Places: results with 0–15 decimals (8 by default) |
+| `calculator.thousands` | — | View › Hide / Show Thousands Separators |
 
 Typed keys: digits, `.` `,`, `+ - * x / :`, `%`, `=`; scientific `^ ( ) !`; programmer
 digits 0–F, `& | ^ ~ %`, `( )`.
+
+## Menus
+
+In Silica's menu bar (silica-ui `SilicaMenuBar`, silica-desktop#25), as measured (CA-01):
+
+- **Calculator**: Services, Quit (⌘Q) from the system.
+- **Edit**: Undo, Redo, Cut, Delete and Select All disabled; Copy (⌘C) and Paste (⌘V).
+- **View**: Basic ⌘1, Scientific ⌘2, Programmer ⌘3 (the current one checked); Hide / Show
+  Thousands Separators and Decimal Places › 0–15 (disabled in the programmer mode); full
+  screen disabled (a fixed-size window).
+- **Window**: Close (⌘W), then the system part of the bar.
+- **Help**: none of its own yet: the bar shows Silica Help.
+
+⌘ shortcuts are the menu bar's; Ctrl with the same keys still works.
 
 ## Known gaps
 
 - The app cannot resize its window yet (silica-desktop#1): the `.desktop` entry starts at the
   basic size (`--size 230x408`); another mode keeps its measured layout anchored at the top-left
   corner until the embedder offers `silica/window` › `setSize`, which the app already calls.
-- History sidebar (⌃⌘S, +220 pt), Convert and RPN modes, the first-launch tip, the decimal
-  places setting and the thousands-separator toggle are not implemented. The zoom button is
+- History sidebar (⌃⌘S, +220 pt), Convert and RPN modes, Math Notes and the first-launch tip
+  are not implemented, so their menu items are not there either; nor About (no About panel
+  yet) or the app's own help. The zoom button is
   not disabled (Ossido does not know the window is fixed).
 - Pressed colours of the scientific and programmer keys and the pressed state of the toolbar
   buttons are not measured (estimated: digit +36 levels; no pressed state).

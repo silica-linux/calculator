@@ -46,6 +46,9 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   /// Shift held in the scientific mode shows the 2nd functions while it is down.
   bool _shiftSecond = false;
 
+  /// View › Hide Thousands Separators: results and entries without digit grouping.
+  bool thousands = true;
+
   bool _active = _isActive(WidgetsBinding.instance.lifecycleState);
   late final AppLifecycleListener _lifecycle = AppLifecycleListener(
     onStateChange: (state) {
@@ -78,8 +81,18 @@ class CalculatorWindowState extends State<CalculatorWindow> {
 
   void _changed() => setState(() {});
 
-  NumberStyle get _style =>
-      NumberStyle.forLanguage(Localizations.localeOf(context).languageCode);
+  NumberStyle get _style {
+    final style = NumberStyle.forLanguage(
+      Localizations.localeOf(context).languageCode,
+    );
+    return thousands ? style : NumberStyle(decimal: style.decimal, group: '');
+  }
+
+  /// View › Hide / Show Thousands Separators (`calculator.thousands`).
+  void toggleThousands() => setState(() => thousands = !thousands);
+
+  /// View › Decimal Places (`calculator.decimal_places`).
+  void setPlaces(int places) => decimal.setPlaces(places);
 
   void setMode(CalcMode next) {
     if (next == mode) return;
@@ -199,7 +212,9 @@ class CalculatorWindowState extends State<CalculatorWindow> {
       return KeyEventResult.handled;
     }
     if (event is KeyUpEvent) return KeyEventResult.ignored;
-    if (keys.isMetaPressed || keys.isControlPressed) {
+    // ⌘ shortcuts are the menu bar's (SilicaMenuBar binds them); Ctrl stays an alternative.
+    if (keys.isMetaPressed) return KeyEventResult.ignored;
+    if (keys.isControlPressed) {
       final key = event.logicalKey;
       if (key == LogicalKeyboardKey.keyC) {
         unawaited(copy());
@@ -221,6 +236,81 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     typed.$2();
     _flash.flash(typed.$1);
     return KeyEventResult.handled;
+  }
+
+  /// The menus in Silica's menu bar (silica-desktop#25; calculator.md › Menus): the app menu,
+  /// Edit with Copy and Paste (the others disabled, as on the reference), View with the
+  /// modes, the thousands separators and the decimal places, Window with Close, Help.
+  List<PlatformMenuItem> menus(AppLocalizations l) {
+    final decimals = mode != CalcMode.programmer;
+    return [
+      SilicaMenus.app(l.appTitle),
+      SilicaMenus.edit(
+        l.menuEdit,
+        copy: () => unawaited(copy()),
+        paste: () => unawaited(paste()),
+      ),
+      SilicaMenu(
+        label: l.menuView,
+        menus: [
+          PlatformMenuItemGroup(
+            members: [
+              for (final (m, label, key) in [
+                (CalcMode.basic, l.modeBasic, LogicalKeyboardKey.digit1),
+                (
+                  CalcMode.scientific,
+                  l.modeScientific,
+                  LogicalKeyboardKey.digit2,
+                ),
+                (
+                  CalcMode.programmer,
+                  l.modeProgrammer,
+                  LogicalKeyboardKey.digit3,
+                ),
+              ])
+                SilicaMenuItem(
+                  label: label,
+                  checked: m == mode,
+                  shortcut: SingleActivator(key, meta: true),
+                  onSelected: () => setMode(m),
+                ),
+            ],
+          ),
+          PlatformMenuItemGroup(
+            members: [
+              SilicaMenuItem(
+                label: thousands ? l.hideThousands : l.showThousands,
+                enabled: decimals,
+                onSelected: toggleThousands,
+              ),
+              SilicaMenu(
+                label: l.decimalPlaces,
+                enabled: decimals,
+                menus: [
+                  for (var p = 0; p <= maxPlaces; p++)
+                    SilicaMenuItem(
+                      label: '$p',
+                      checked: decimal.places == p,
+                      onSelected: () => setPlaces(p),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          // A fixed-size window has no full screen (CA-01: the item is disabled).
+          const PlatformMenuItemGroup(
+            members: [
+              SilicaMenuItem.system(
+                SilicaMenuItemRole.fullScreen,
+                enabled: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+      SilicaMenus.window(l.menuWindow, close: true),
+      SilicaMenus.help(l.menuHelp),
+    ];
   }
 
   List<MenuEntry> _modeMenu(AppLocalizations l) => [
@@ -273,120 +363,123 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     final top = keypadTop[mode]!;
     final programmerMode = mode == CalcMode.programmer;
     final error = programmerMode ? programmer.error : decimal.error;
-    return Focus(
-      focusNode: _focus,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: ColoredBox(
-        color: windowFill,
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            key: ValueKey('calculator ${mode.name}'),
-            width: size.width,
-            height: size.height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  height: toolbarHeight,
-                  child: WindowDragArea(child: SizedBox.expand()),
-                ),
-                if (!programmerMode)
+    return SilicaMenuBar(
+      menus: menus(l),
+      child: Focus(
+        focusNode: _focus,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: ColoredBox(
+          color: windowFill,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              key: ValueKey('calculator ${mode.name}'),
+              width: size.width,
+              height: size.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    height: toolbarHeight,
+                    child: WindowDragArea(child: SizedBox.expand()),
+                  ),
+                  if (!programmerMode)
+                    _toolbarButton(
+                      key: const ValueKey('history button'),
+                      left: historyButtonLeft,
+                      glyph: Glyph.sidebar,
+                      tooltip: l.sidebarButton,
+                    ),
                   _toolbarButton(
-                    key: const ValueKey('history button'),
-                    left: historyButtonLeft,
-                    glyph: Glyph.sidebar,
-                    tooltip: l.sidebarButton,
-                  ),
-                _toolbarButton(
-                  key: const ValueKey('mode button'),
-                  left: size.width - 44,
-                  glyph: Glyph.calculator,
-                  hover: true,
-                  tooltip: l.modeButton,
-                  // Under the button (silica-reference CA-01: left edge at the button, top at the
-                  // toolbar's bottom). The reference menu extends past the window; ours stays
-                  // inside it until menus are separate surfaces (silica-desktop#4).
-                  onTap: () => setState(() {
-                    final menu = menuSize(_modeMenu(l));
-                    _menuAt = _menuAt != null
-                        ? null
-                        : Offset(
-                            math.max(
-                              4.0,
-                              math.min(
-                                size.width - 44,
-                                size.width - menu.width - 4,
+                    key: const ValueKey('mode button'),
+                    left: size.width - 44,
+                    glyph: Glyph.calculator,
+                    hover: true,
+                    tooltip: l.modeButton,
+                    // Under the button (silica-reference CA-01: left edge at the button, top at the
+                    // toolbar's bottom). The reference menu extends past the window; ours stays
+                    // inside it until menus are separate surfaces (silica-desktop#4).
+                    onTap: () => setState(() {
+                      final menu = menuSize(_modeMenu(l));
+                      _menuAt = _menuAt != null
+                          ? null
+                          : Offset(
+                              math.max(
+                                4.0,
+                                math.min(
+                                  size.width - 44,
+                                  size.width - menu.width - 4,
+                                ),
                               ),
-                            ),
-                            toolbarHeight,
-                          );
-                  }),
-                ),
-                Positioned(
-                  left: keypadLeft,
-                  right: displayRightPadding,
-                  top: 0,
-                  height: top,
-                  child: Display(
-                    main: error
-                        ? l.error
-                        : programmerMode
-                        ? programmer.mainText()
-                        : decimal.mainText(_style),
-                    upper: programmerMode ? null : decimal.upperText(_style),
-                    suffix: programmerMode && !error
-                        ? '${programmer.base}'
-                        : null,
-                    indicator: programmerMode
-                        ? programmer.character()
-                        : mode == CalcMode.scientific &&
-                              decimal.angle == AngleUnit.radians
-                        ? l.radiansIndicator
-                        : null,
+                              toolbarHeight,
+                            );
+                    }),
                   ),
-                ),
-                if (programmerMode)
-                  Positioned.fill(
-                    child: ProgrammerPanel(
-                      calc: programmer,
-                      showBinaryLabel: l.showBinary,
-                      hideBinaryLabel: l.hideBinary,
-                      active: _active,
+                  Positioned(
+                    left: keypadLeft,
+                    right: displayRightPadding,
+                    top: 0,
+                    height: top,
+                    child: Display(
+                      main: error
+                          ? l.error
+                          : programmerMode
+                          ? programmer.mainText()
+                          : decimal.mainText(_style),
+                      upper: programmerMode ? null : decimal.upperText(_style),
+                      suffix: programmerMode && !error
+                          ? '${programmer.base}'
+                          : null,
+                      indicator: programmerMode
+                          ? programmer.character()
+                          : mode == CalcMode.scientific &&
+                                decimal.angle == AngleUnit.radians
+                          ? l.radiansIndicator
+                          : null,
                     ),
                   ),
-                for (var r = 0; r < rows.length; r++)
-                  for (var c = 0; c < rows[r].length; c++)
-                    Positioned(
-                      left: programmerMode
-                          ? programmerColumns[c]
-                          : keypadLeft + c * columnPitch[mode]!,
-                      top: top + r * rowPitch,
-                      child: KeyButton(
-                        id: rows[r][c].id,
-                        role: rows[r][c].role,
-                        width: width,
+                  if (programmerMode)
+                    Positioned.fill(
+                      child: ProgrammerPanel(
+                        calc: programmer,
+                        showBinaryLabel: l.showBinary,
+                        hideBinaryLabel: l.hideBinary,
                         active: _active,
-                        flash: _flash,
-                        toggled: rows[r][c].toggled,
-                        onPressed: rows[r][c].action,
-                        child: rows[r][c].label,
                       ),
                     ),
-                if (_menuAt != null)
-                  Positioned.fill(
-                    child: MenuHost(
-                      entries: _modeMenu(l),
-                      anchor: _menuAt!,
-                      opaque: true,
-                      onDismissed: () => setState(() => _menuAt = null),
+                  for (var r = 0; r < rows.length; r++)
+                    for (var c = 0; c < rows[r].length; c++)
+                      Positioned(
+                        left: programmerMode
+                            ? programmerColumns[c]
+                            : keypadLeft + c * columnPitch[mode]!,
+                        top: top + r * rowPitch,
+                        child: KeyButton(
+                          id: rows[r][c].id,
+                          role: rows[r][c].role,
+                          width: width,
+                          active: _active,
+                          flash: _flash,
+                          toggled: rows[r][c].toggled,
+                          onPressed: rows[r][c].action,
+                          child: rows[r][c].label,
+                        ),
+                      ),
+                  if (_menuAt != null)
+                    Positioned.fill(
+                      child: MenuHost(
+                        entries: _modeMenu(l),
+                        anchor: _menuAt!,
+                        opaque: true,
+                        onDismissed: () => setState(() => _menuAt = null),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

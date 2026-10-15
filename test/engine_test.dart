@@ -307,4 +307,22 @@ void main() {
       expect(p.character(), 'é');
     });
   });
+
+  test('View › Decimal Places rounds the results, 0–15', () {
+    final c = DecimalCalculator()
+      ..digit('2')
+      ..operator(BinOp.divide)
+      ..digit('3')
+      ..equals();
+    expect(c.mainText(NumberStyle.english), '0.66666667');
+    c.setPlaces(3);
+    expect(c.mainText(NumberStyle.english), '0.667');
+    expect(c.copyText(NumberStyle.english), '0.667');
+    c.setPlaces(0);
+    expect(c.mainText(NumberStyle.english), '1');
+    c.setPlaces(99);
+    expect(c.places, maxPlaces);
+    c.setPlaces(-4);
+    expect(c.places, 0);
+  });
 }

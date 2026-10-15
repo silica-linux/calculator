@@ -53,4 +53,25 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyClear => 'C';
+
+  @override
+  String get menuEdit => 'Modifica';
+
+  @override
+  String get menuView => 'Vista';
+
+  @override
+  String get menuWindow => 'Finestra';
+
+  @override
+  String get menuHelp => 'Aiuto';
+
+  @override
+  String get decimalPlaces => 'Cifre decimali';
+
+  @override
+  String get hideThousands => 'Nascondi i separatori delle migliaia';
+
+  @override
+  String get showThousands => 'Mostra i separatori delle migliaia';
 }

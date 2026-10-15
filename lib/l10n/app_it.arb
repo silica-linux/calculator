@@ -14,5 +14,12 @@
   "copy": "Copia",
   "paste": "Incolla",
   "keyClearAll": "AC",
-  "keyClear": "C"
+  "keyClear": "C",
+  "menuEdit": "Modifica",
+  "menuView": "Vista",
+  "menuWindow": "Finestra",
+  "menuHelp": "Aiuto",
+  "decimalPlaces": "Cifre decimali",
+  "hideThousands": "Nascondi i separatori delle migliaia",
+  "showThousands": "Mostra i separatori delle migliaia"
 }

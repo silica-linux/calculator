@@ -13,6 +13,9 @@ import 'rational.dart';
 /// Digits at most in one typed number (the display shrinks past 9, CA-01).
 const int maxEntryDigits = 20;
 
+/// The most decimals View › Decimal Places offers (CA-01: 0–15).
+const int maxPlaces = 15;
+
 class DecimalCalculator extends ChangeNotifier {
   DecimalCalculator({math.Random? random}) : _random = random ?? math.Random();
 
@@ -33,6 +36,17 @@ class DecimalCalculator extends ChangeNotifier {
   Rational memory = Rational.zero;
   bool hasMemory = false;
 
+  /// Decimals a result shows at most (View › Decimal Places, 0–15; 8 as measured).
+  int places = 8;
+
+  /// Sets the decimals of the results (clamped to 0–15).
+  void setPlaces(int value) {
+    final next = value.clamp(0, maxPlaces);
+    if (next == places) return;
+    places = next;
+    _changed();
+  }
+
   /// "2nd": the alternative functions of some keys.
   bool second = false;
   AngleUnit angle = AngleUnit.degrees;
@@ -42,7 +56,7 @@ class DecimalCalculator extends ChangeNotifier {
 
   /// The main line.
   String mainText(NumberStyle style) {
-    if (evaluated) return formatNumber(result, style);
+    if (evaluated) return formatNumber(result, style, places: places);
     final typed =
         renderTokens(tokens, style) +
         (entry.isEmpty ? '' : formatEntry(entry, style));
@@ -367,7 +381,13 @@ class DecimalCalculator extends ChangeNotifier {
   /// Copy: what the main line shows, without grouping.
   String copyText(NumberStyle style) {
     final plain = NumberStyle(decimal: style.decimal, group: '');
-    if (evaluated) return formatNumber(result, plain).replaceAll('−', '-');
-    return formatNumber(currentValue(), plain).replaceAll('−', '-');
+    if (evaluated) {
+      return formatNumber(result, plain, places: places).replaceAll('−', '-');
+    }
+    return formatNumber(
+      currentValue(),
+      plain,
+      places: places,
+    ).replaceAll('−', '-');
   }
 }

@@ -29,5 +29,19 @@
   "keyClearAll": "AC",
   "@keyClearAll": {"description": "Key that clears everything (nothing typed yet). Keep it short: two letters."},
   "keyClear": "C",
-  "@keyClear": {"description": "Key that clears what was typed. One letter."}
+  "@keyClear": {"description": "Key that clears what was typed. One letter."},
+  "menuEdit": "Edit",
+  "@menuEdit": {"description": "Menu bar: the Edit menu."},
+  "menuView": "View",
+  "@menuView": {"description": "Menu bar: the View menu."},
+  "menuWindow": "Window",
+  "@menuWindow": {"description": "Menu bar: the Window menu."},
+  "menuHelp": "Help",
+  "@menuHelp": {"description": "Menu bar: the Help menu."},
+  "decimalPlaces": "Decimal Places",
+  "@decimalPlaces": {"description": "View menu: submenu with the number of decimals results show (0–15)."},
+  "hideThousands": "Hide Thousands Separators",
+  "@hideThousands": {"description": "View menu: stop grouping digits by thousands."},
+  "showThousands": "Show Thousands Separators",
+  "@showThousands": {"description": "View menu: group digits by thousands again."}
 }

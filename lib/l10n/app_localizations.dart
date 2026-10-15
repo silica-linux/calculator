@@ -187,6 +187,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'C'**
   String get keyClear;
+
+  /// Menu bar: the Edit menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get menuEdit;
+
+  /// Menu bar: the View menu.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get menuView;
+
+  /// Menu bar: the Window menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Window'**
+  String get menuWindow;
+
+  /// Menu bar: the Help menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get menuHelp;
+
+  /// View menu: submenu with the number of decimals results show (0–15).
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal Places'**
+  String get decimalPlaces;
+
+  /// View menu: stop grouping digits by thousands.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Thousands Separators'**
+  String get hideThousands;
+
+  /// View menu: group digits by thousands again.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Thousands Separators'**
+  String get showThousands;
 }
 
 class _AppLocalizationsDelegate
