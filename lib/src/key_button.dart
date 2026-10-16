@@ -1,10 +1,10 @@
-// A calculator key (calculator.md › Keys, States): a 48 pt circle or a capsule, with a 1 pt
-// dark outline and a light rim (+44 levels on top, +30 at the bottom, +8 on the sides). No
-// change on hover; pressed it lightens and fades back after the release (~200 ms, operators
-// ~330 ms); a typed key lights it for ~80 ms. In an inactive window functions and operators
-// turn gray.
+// A calculator key (kit `Apps/Calculator/Key/*`, calculator.md › Keys, States): a flat 48 pt
+// circle or capsule from the palette. No change on hover; pressed it lightens and fades back
+// after the release (~200 ms, operators ~330 ms); a typed key lights it for ~80 ms. In an
+// inactive window keys turn gray.
 
 import 'package:flutter/widgets.dart';
+import 'package:silica_ui/silica_ui.dart';
 
 import 'metrics.dart';
 
@@ -20,17 +20,23 @@ class KeyFlash extends ChangeNotifier {
   }
 }
 
-Color _lighter(Color c, int levels) {
-  int ch(double v) => (v * 255 + levels).round().clamp(0, 255);
-  return Color.fromARGB(255, ch(c.r), ch(c.g), ch(c.b));
-}
-
-/// A key's fill at rest: gray in an inactive window in every mode (orange too), `#7e7e7f`
-/// for 2nd switched on (CA-01, CA-02).
-Color keyFill(KeyRole role, {required bool active, bool toggled = false}) {
-  final colors = keyColors[role] ?? keyColors[KeyRole.digit]!;
+/// A key's fill at rest, from the `App/Calculator` palette: gray in an inactive window in every
+/// mode (orange too), `#7e7e7f` for 2nd switched on (CA-01, CA-02).
+Color keyFill(
+  AmalfiCalculatorColors palette,
+  KeyRole role, {
+  required bool active,
+  bool toggled = false,
+}) {
+  final colors = keyColors[role]!;
   if (!active) return colors.inactive;
-  return toggled ? secondOn : colors.rest;
+  if (toggled) return secondOn;
+  return switch (role) {
+    KeyRole.digit => palette.digit,
+    KeyRole.function => palette.function,
+    KeyRole.operator => palette.operator,
+    KeyRole.scientific || KeyRole.programmer => palette.scientific,
+  };
 }
 
 class KeyButton extends StatefulWidget {
@@ -54,7 +60,7 @@ class KeyButton extends StatefulWidget {
   final Widget Function(Color color) child;
   final VoidCallback onPressed;
 
-  /// The window is active (inactive: functions and operators gray).
+  /// The window is active (inactive: keys gray).
   final bool active;
   final KeyFlash flash;
 
@@ -71,8 +77,8 @@ class _KeyButtonState extends State<KeyButton>
     vsync: this,
     duration: widget.role == KeyRole.operator ? fadeOperator : fadeDigit,
   );
-  bool _down = false;
   int _flashSerial = 0;
+  bool _down = false;
 
   @override
   void initState() {
@@ -108,7 +114,7 @@ class _KeyButtonState extends State<KeyButton>
   }
 
   void _setDown(bool down) {
-    setState(() => _down = down);
+    _down = down;
     if (down) {
       _press.value = 1;
     } else {
@@ -118,8 +124,10 @@ class _KeyButtonState extends State<KeyButton>
 
   @override
   Widget build(BuildContext context) {
-    final colors = keyColors[widget.role] ?? keyColors[KeyRole.digit]!;
+    final theme = AmalfiTheme.of(context);
+    final colors = keyColors[widget.role]!;
     final rest = keyFill(
+      theme.colors.calculator,
       widget.role,
       active: widget.active,
       toggled: widget.toggled,
@@ -136,62 +144,21 @@ class _KeyButtonState extends State<KeyButton>
         animation: _press,
         builder: (context, _) {
           final fill = Color.lerp(rest, colors.pressed, _press.value) ?? rest;
-          return CustomPaint(
+          return DecoratedBox(
             key: ValueKey('key ${widget.id}'),
-            size: Size(widget.width, keyHeight),
-            painter: _KeyPainter(fill),
+            // Kit `Key/*`: a flat capsule (a circle at 48 × 48) with smooth corners.
+            decoration: AmalfiShapeDecoration(
+              color: fill,
+              shape: AmalfiSmoothBorder(radius: keyHeight / 2),
+            ),
             child: SizedBox(
               width: widget.width,
               height: keyHeight,
-              child: Center(child: widget.child(const Color(0xFFFFFFFF))),
+              child: Center(child: widget.child(theme.colors.textOnAccent)),
             ),
           );
         },
       ),
     );
   }
-}
-
-class _KeyPainter extends CustomPainter {
-  const _KeyPainter(this.fill);
-  final Color fill;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final radius = Radius.circular(size.height / 2);
-    final body = RRect.fromRectAndRadius(rect, radius);
-    canvas
-      ..drawRRect(body.inflate(1), Paint()..color = keyOutline)
-      ..drawRRect(
-        body,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_lighter(fill, 13), fill, fill, _lighter(fill, 7)],
-            stops: const [0.02, 0.12, 0.88, 0.98],
-          ).createShader(rect),
-      )
-      ..drawRRect(
-        body.deflate(0.5),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _lighter(fill, 44),
-              _lighter(fill, 8),
-              _lighter(fill, 8),
-              _lighter(fill, 30),
-            ],
-            stops: const [0, 0.3, 0.7, 1],
-          ).createShader(rect),
-      );
-  }
-
-  @override
-  bool shouldRepaint(_KeyPainter old) => old.fill != fill;
 }

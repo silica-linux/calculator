@@ -78,7 +78,18 @@ class _CalculatorAppState extends State<CalculatorApp>
     delegates: AppLocalizations.localizationsDelegates,
     child: Directionality(
       textDirection: TextDirection.ltr,
-      child: CalculatorWindow(initialMode: widget.mode),
+      // Always dark, with the `App/Calculator` palette; the overlay hosts the Mode menu.
+      child: AmalfiTheme(
+        brightness: Brightness.dark,
+        app: 'Calculator',
+        child: Overlay(
+          initialEntries: [
+            OverlayEntry(
+              builder: (_) => CalculatorWindow(initialMode: widget.mode),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }

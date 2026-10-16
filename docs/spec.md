@@ -5,10 +5,10 @@ What the app does and how it behaves. Measurements: `silica-reference` › `calc
 
 ## Window
 
-- Always dark: the system appearance does not change it. Background `#272727`.
-- Fixed size per mode: basic 230 × 408, scientific 674 × 408, programmer 488 × 582. A mode
+- Always dark: the system appearance does not change it. UI 1.0 "Amalfi": the `App/Calculator` palette (window `#272727`), flat capsule keys 48 pt tall, gap 8, padding 16; Amalfi toolbar, segmented controls, push button and menu from silica_ui.
+- Fixed size per mode: basic 248 × 412, scientific 664 × 412, programmer 528 × 576 (Amalfi kit masters; the measured reference sizes are in `docs/spec/window.md`). A mode
   change resizes the window keeping the top-left corner, in one frame, with no animation.
-- Toolbar 52 pt unified with the window (Ossido draws the window buttons): a history button
+- Toolbar 52 pt unified with the window (Ossido draws the window buttons): the history toggle is hidden until the sidebar exists (issue #2) and the mode button is a 32 pt Amalfi toolbar button, 12 pt from the edge (kit `Toolbar Basic`). Measured reference (CA-01): a history button
   (36 pt circle at x 96, not in the programmer mode) and the mode button (36 pt circle at
   width − 44), fill `#444546`, 1 pt `#0f0f0f` outline, white glyph. Only the Mode button has
   a hover state (`#4e4e4f`); no key or segment changes under the pointer.
@@ -86,7 +86,7 @@ In Silica's menu bar (silica-ui `SilicaMenuBar`, silica-desktop#25), as measured
 ## Known gaps
 
 - The app cannot resize its window yet (silica-desktop#1): the `.desktop` entry starts at the
-  basic size (`--size 230x408`); another mode keeps its measured layout anchored at the top-left
+  basic size (`--size 248x412`); another mode keeps its measured layout anchored at the top-left
   corner until the embedder offers `silica/window` › `setSize`, which the app already calls.
 - History sidebar (⌃⌘S, +220 pt), Convert and RPN modes, Math Notes and the first-launch tip
   are not implemented, so their menu items are not there either; nor About (no About panel

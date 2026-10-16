@@ -28,31 +28,35 @@ class KeySpec {
   final String? tooltip;
 }
 
-Widget Function(Color) _text(
-  String s, {
-  double size = 22,
-  FontWeight weight = FontWeight.w600,
-}) =>
+/// Digit, function and operator labels: `Title 2` (20 / 26 semibold, kit `Key/Digit`).
+Widget Function(Color) _text(String s) =>
     (color) => Text(
       s,
-      style: TextStyle(
-        fontFamily: uiFontFamily,
-        package: 'silica_ui',
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: 1,
-        // Two-letter labels (AC, FF) are a little tighter than Inter SemiBold: 27 pt wide.
-        letterSpacing: s.length > 1 ? -1.2 : 0,
-      ),
+      style: AmalfiType.title2(color: color),
+      maxLines: 1,
+      softWrap: false,
     );
 
-Widget Function(Color) _glyph(Glyph g) =>
-    (color) => GlyphIcon(g, color: color);
+/// The operator keys are text in the kit (÷ × − + =); the backspace is the Icon Kit's
+/// `delete-left` at 20 pt.
+Widget Function(Color) _glyph(Glyph g) => switch (g) {
+  Glyph.divide => _text('÷'),
+  Glyph.multiply => _text('×'),
+  Glyph.minus => _text('−'),
+  Glyph.plus => _text('+'),
+  Glyph.equals => _text('='),
+  Glyph.plusMinus => _text('+/−'),
+  _ => (color) => AmalfiSymbol(
+    'delete-left',
+    size: 20,
+    color: color,
+    fallback: BackspaceIcon(color: color, size: 20),
+  ),
+};
 
-Widget Function(Color) _label(KeyLabel l, {double size = 15}) =>
-    (color) =>
-        KeyLabelText(l, color: color, size: size, weight: FontWeight.w600);
+/// Scientific and programmer labels: `Title 3` (kit `Key/Scientific`).
+Widget Function(Color) _label(KeyLabel l) =>
+    (color) => KeyLabelText(l, color: color);
 
 /// Texts the keypads need from the localizations.
 class KeyTexts {
@@ -71,11 +75,10 @@ class KeyTexts {
 List<List<KeySpec>> _decimalPad(
   DecimalCalculator c,
   NumberStyle style,
-  KeyTexts t, {
-  double digitSize = 22,
-}) {
+  KeyTexts t,
+) {
   KeySpec digit(String d) =>
-      KeySpec(d, KeyRole.digit, _text(d, size: digitSize), () => c.digit(d));
+      KeySpec(d, KeyRole.digit, _text(d), () => c.digit(d));
   KeySpec op(String id, Glyph g, BinOp o) =>
       KeySpec(id, KeyRole.operator, _glyph(g), () => c.operator(o));
   return [
@@ -89,13 +92,13 @@ List<List<KeySpec>> _decimalPad(
       KeySpec(
         'clear',
         KeyRole.function,
-        _text(c.showsClear ? t.clear : t.clearAll, size: digitSize),
+        _text(c.showsClear ? t.clear : t.clearAll),
         c.clear,
       ),
       KeySpec(
         'percent',
         KeyRole.function,
-        _text('%', size: digitSize),
+        _text('%'),
         () => c.postfix(Postfix.percent),
       ),
       op('divide', Glyph.divide, BinOp.divide),
@@ -116,12 +119,7 @@ List<List<KeySpec>> _decimalPad(
     [
       KeySpec('negate', KeyRole.digit, _glyph(Glyph.plusMinus), c.negate),
       digit('0'),
-      KeySpec(
-        'decimal',
-        KeyRole.digit,
-        _text(style.decimal, size: digitSize),
-        c.decimalPoint,
-      ),
+      KeySpec('decimal', KeyRole.digit, _text(style.decimal), c.decimalPoint),
       KeySpec('equals', KeyRole.operator, _glyph(Glyph.equals), c.equals),
     ],
   ];
@@ -261,9 +259,9 @@ List<List<KeySpec>> scientificKeys(
 
 List<List<KeySpec>> programmerKeys(ProgrammerCalculator p, KeyTexts t) {
   KeySpec digit(String d) =>
-      KeySpec('digit $d', KeyRole.digit, _text(d, size: 22), () => p.digits(d));
+      KeySpec('digit $d', KeyRole.digit, _text(d), () => p.digits(d));
   KeySpec pr(String id, KeyLabel label, VoidCallback action) =>
-      KeySpec(id, KeyRole.programmer, _label(label, size: 15), action);
+      KeySpec(id, KeyRole.programmer, _label(label), action);
   KeySpec binary(String id, KeyLabel label, ProgOp op) =>
       pr(id, label, () => p.operator(op));
   KeySpec unary(String id, KeyLabel label, ProgUnary op) =>
@@ -286,7 +284,7 @@ List<List<KeySpec>> programmerKeys(ProgrammerCalculator p, KeyTexts t) {
       KeySpec(
         'clear',
         KeyRole.function,
-        _text(p.showsClear ? t.clear : t.clearAll, size: 22),
+        _text(p.showsClear ? t.clear : t.clearAll),
         p.clear,
       ),
     ],
@@ -330,19 +328,9 @@ List<List<KeySpec>> programmerKeys(ProgrammerCalculator p, KeyTexts t) {
       binary('mod', const KeyLabel('mod'), ProgOp.modulo),
       unary('flip8', const KeyLabel('flip', sub: '8'), ProgUnary.flip8),
       unary('flip16', const KeyLabel('flip', sub: '16'), ProgUnary.flip16),
-      KeySpec(
-        'digits FF',
-        KeyRole.digit,
-        _text('FF', size: 22),
-        () => p.digits('FF'),
-      ),
+      KeySpec('digits FF', KeyRole.digit, _text('FF'), () => p.digits('FF')),
       digit('0'),
-      KeySpec(
-        'digits 00',
-        KeyRole.digit,
-        _text('00', size: 22),
-        () => p.digits('00'),
-      ),
+      KeySpec('digits 00', KeyRole.digit, _text('00'), () => p.digits('00')),
       KeySpec('equals', KeyRole.operator, _glyph(Glyph.equals), p.equals),
     ],
   ];

@@ -1,7 +1,7 @@
-// The calculator window (calculator.md › Window and toolbar): always dark, fixed size per
-// mode, toolbar 52 pt unified with the window (Ossido draws only the window buttons), two
-// 36 pt circular buttons (history, mode), the display and the keypad. Typed keys light the
-// matching key; the window goes gray when it is not the active one.
+// The calculator window (kit `App · Calculator`, calculator.md › Window and toolbar): always
+// dark, fixed size per mode, toolbar 52 pt unified with the window (the compositor draws the
+// window buttons), the Mode button, the display and the keypad. Typed keys light the matching
+// key; the window goes gray when it is not the active one.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -16,7 +16,6 @@ import 'engine/calculator.dart';
 import 'engine/expression.dart';
 import 'engine/format.dart';
 import 'engine/programmer.dart';
-import 'glyphs.dart';
 import 'key_button.dart';
 import 'keys.dart';
 import 'metrics.dart';
@@ -41,7 +40,6 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   final ProgrammerCalculator programmer = ProgrammerCalculator();
   final KeyFlash _flash = KeyFlash();
   final FocusNode _focus = FocusNode();
-  Offset? _menuAt;
 
   /// Shift held in the scientific mode shows the 2nd functions while it is down.
   bool _shiftSecond = false;
@@ -97,10 +95,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   void setMode(CalcMode next) {
     if (next == mode) return;
     // The mode switch is instant: size and keypad change in one frame (silica-reference CA-01).
-    setState(() {
-      mode = next;
-      _menuAt = null;
-    });
+    setState(() => mode = next);
     unawaited(requestWindowSize(windowSize[next]!));
   }
 
@@ -313,13 +308,13 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     ];
   }
 
-  List<MenuEntry> _modeMenu(AppLocalizations l) => [
+  List<AmalfiMenuEntry> _modeMenu(AppLocalizations l) => [
     for (final (m, label, key) in [
       (CalcMode.basic, l.modeBasic, '1'),
       (CalcMode.scientific, l.modeScientific, '2'),
       (CalcMode.programmer, l.modeProgrammer, '3'),
     ])
-      MenuAction(
+      AmalfiMenuAction(
         label,
         shortcut: '⌘$key',
         checked: m == mode,
@@ -327,31 +322,32 @@ class CalculatorWindowState extends State<CalculatorWindow> {
       ),
   ];
 
-  Widget _toolbarButton({
-    required Key key,
-    required double left,
-    required Glyph glyph,
-    required String tooltip,
-    bool hover = false,
-    VoidCallback? onTap,
-  }) => Positioned(
-    left: left,
-    top: toolbarButtonTop,
-    width: toolbarButton,
-    height: toolbarButton,
-    child: ToolbarButton(
-      key: key,
-      glyph: glyph,
-      tooltip: tooltip,
-      active: _active,
-      hover: hover,
-      onTap: onTap,
-    ),
-  );
+  /// The Mode button's menu, below the button and ending with it (Escape or a click outside
+  /// closes it).
+  void _openModeMenu(BuildContext button, AppLocalizations l) {
+    final box = button.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+    const width = 200.0;
+    final topLeft = box.localToGlobal(Offset.zero);
+    final screen = MediaQuery.sizeOf(button);
+    final x = math.max(
+      4.0,
+      math.min(topLeft.dx + box.size.width - width, screen.width - width - 4),
+    );
+    unawaited(
+      showAmalfiMenu(
+        context: button,
+        position: Offset(x, topLeft.dy + box.size.height + 4),
+        entries: _modeMenu(l),
+        width: width,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final theme = AmalfiTheme.of(context);
     final size = windowSize[mode]!;
     final texts = KeyTexts(
       clearAll: l.keyClearAll,
@@ -369,116 +365,106 @@ class CalculatorWindowState extends State<CalculatorWindow> {
         focusNode: _focus,
         autofocus: true,
         onKeyEvent: _onKey,
-        child: ColoredBox(
-          color: windowFill,
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              key: ValueKey('calculator ${mode.name}'),
-              width: size.width,
-              height: size.height,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: toolbarHeight,
-                    child: WindowDragArea(child: SizedBox.expand()),
-                  ),
-                  if (!programmerMode)
-                    _toolbarButton(
-                      key: const ValueKey('history button'),
-                      left: historyButtonLeft,
-                      glyph: Glyph.sidebar,
-                      tooltip: l.sidebarButton,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            key: ValueKey('calculator ${mode.name}'),
+            width: size.width,
+            height: size.height,
+            // A real toplevel: the compositor draws the shadow (`shadow: false`).
+            child: AmalfiWindow(
+              active: _active,
+              shadow: false,
+              child: ColoredBox(
+                color: theme.colors.calculator.window,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: AmalfiToolbarMetrics.toolbarHeight,
+                      child: WindowDragArea(child: SizedBox.expand()),
                     ),
-                  _toolbarButton(
-                    key: const ValueKey('mode button'),
-                    left: size.width - 44,
-                    glyph: Glyph.calculator,
-                    hover: true,
-                    tooltip: l.modeButton,
-                    // Under the button (silica-reference CA-01: left edge at the button, top at the
-                    // toolbar's bottom). The reference menu extends past the window; ours stays
-                    // inside it until menus are separate surfaces (silica-desktop#4).
-                    onTap: () => setState(() {
-                      final menu = menuSize(_modeMenu(l));
-                      _menuAt = _menuAt != null
-                          ? null
-                          : Offset(
-                              math.max(
-                                4.0,
-                                math.min(
-                                  size.width - 44,
-                                  size.width - menu.width - 4,
-                                ),
-                              ),
-                              toolbarHeight,
-                            );
-                    }),
-                  ),
-                  Positioned(
-                    left: keypadLeft,
-                    right: displayRightPadding,
-                    top: 0,
-                    height: top,
-                    child: Display(
-                      main: error
-                          ? l.error
-                          : programmerMode
-                          ? programmer.mainText()
-                          : decimal.mainText(_style),
-                      upper: programmerMode ? null : decimal.upperText(_style),
-                      suffix: programmerMode && !error
-                          ? '${programmer.base}'
-                          : null,
-                      indicator: programmerMode
-                          ? programmer.character()
-                          : mode == CalcMode.scientific &&
-                                decimal.angle == AngleUnit.radians
-                          ? l.radiansIndicator
-                          : null,
-                    ),
-                  ),
-                  if (programmerMode)
-                    Positioned.fill(
-                      child: ProgrammerPanel(
-                        calc: programmer,
-                        showBinaryLabel: l.showBinary,
-                        hideBinaryLabel: l.hideBinary,
+                    // Kit `Toolbar Basic|Sci|Prog`: the controls piece (the compositor draws
+                    // the window buttons there), a spacer and the Mode button. The history
+                    // toggle of the kit is not shown until the sidebar exists (issue #2).
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      child: AmalfiToolbar(
+                        surface: AmalfiToolbarSurface.none,
+                        padding: const EdgeInsets.only(right: 8),
                         active: _active,
+                        children: [
+                          const SizedBox(width: controlsWidth),
+                          const AmalfiSpacerPiece(),
+                          AmalfiToolbarPiece(
+                            child: Builder(
+                              builder: (button) => AmalfiToolbarButton(
+                                key: const ValueKey('mode button'),
+                                semanticLabel: l.modeButton,
+                                icon: const AmalfiSymbol('ellipsis'),
+                                onPressed: () => _openModeMenu(button, l),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  for (var r = 0; r < rows.length; r++)
-                    for (var c = 0; c < rows[r].length; c++)
-                      Positioned(
-                        left: programmerMode
-                            ? programmerColumns[c]
-                            : keypadLeft + c * columnPitch[mode]!,
-                        top: top + r * rowPitch,
-                        child: KeyButton(
-                          id: rows[r][c].id,
-                          role: rows[r][c].role,
-                          width: width,
-                          active: _active,
-                          flash: _flash,
-                          toggled: rows[r][c].toggled,
-                          onPressed: rows[r][c].action,
-                          child: rows[r][c].label,
+                    Positioned(
+                      left: displayPadding,
+                      right: displayPadding,
+                      top: 0,
+                      height: top,
+                      child: Display(
+                        main: error
+                            ? l.error
+                            : programmerMode
+                            ? programmer.mainText()
+                            : decimal.mainText(_style),
+                        upper: programmerMode
+                            ? null
+                            : decimal.upperText(_style),
+                        suffix: programmerMode && !error
+                            ? '${programmer.base}'
+                            : null,
+                        indicator: programmerMode
+                            ? programmer.character()
+                            : mode == CalcMode.scientific &&
+                                  decimal.angle == AngleUnit.radians
+                            ? l.radiansIndicator
+                            : null,
+                      ),
+                    ),
+                    if (programmerMode)
+                      Positioned.fill(
+                        child: ProgrammerPanel(
+                          calc: programmer,
+                          showBinaryLabel: l.showBinary,
+                          hideBinaryLabel: l.hideBinary,
                         ),
                       ),
-                  if (_menuAt != null)
-                    Positioned.fill(
-                      child: MenuHost(
-                        entries: _modeMenu(l),
-                        anchor: _menuAt!,
-                        opaque: true,
-                        onDismissed: () => setState(() => _menuAt = null),
-                      ),
-                    ),
-                ],
+                    for (var r = 0; r < rows.length; r++)
+                      for (var c = 0; c < rows[r].length; c++)
+                        Positioned(
+                          left: keypadLeft + c * columnPitch(mode),
+                          top: top + r * rowPitch,
+                          child: KeyButton(
+                            id: rows[r][c].id,
+                            role: rows[r][c].role,
+                            width: width,
+                            active: _active,
+                            flash: _flash,
+                            toggled: rows[r][c].toggled,
+                            onPressed: rows[r][c].action,
+                            child: rows[r][c].label,
+                          ),
+                        ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -486,62 +472,4 @@ class CalculatorWindowState extends State<CalculatorWindow> {
       ),
     );
   }
-}
-
-/// A 36 pt circular toolbar button: `#444546` with a 1 pt `#0f0f0f` outline, `#3b3b3c` in an
-/// inactive window. Only the Mode button lightens under the pointer (`#4e4e4f`, CA-02).
-class ToolbarButton extends StatefulWidget {
-  const ToolbarButton({
-    super.key,
-    required this.glyph,
-    required this.tooltip,
-    required this.active,
-    this.hover = false,
-    this.onTap,
-  });
-
-  final Glyph glyph;
-  final String tooltip;
-  final bool active;
-
-  /// Has the hover state (the Mode button).
-  final bool hover;
-  final VoidCallback? onTap;
-
-  @override
-  State<ToolbarButton> createState() => _ToolbarButtonState();
-}
-
-class _ToolbarButtonState extends State<ToolbarButton> {
-  bool _over = false;
-
-  Color get fill => !widget.active
-      ? toolbarButtonInactive
-      : widget.hover && _over
-      ? toolbarButtonHover
-      : toolbarButtonFill;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: widget.tooltip,
-    button: true,
-    child: MouseRegion(
-      onEnter: (_) => setState(() => _over = true),
-      onExit: (_) => setState(() => _over = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: fill,
-            shape: BoxShape.circle,
-            border: Border.all(color: toolbarButtonOutline),
-          ),
-          child: Center(
-            child: GlyphIcon(widget.glyph, color: const Color(0xFFFFFFFF)),
-          ),
-        ),
-      ),
-    ),
-  );
 }

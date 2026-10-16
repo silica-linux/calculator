@@ -1,21 +1,18 @@
-// The display (calculator.md › Display): the main line right-aligned 12 pt from the window
-// edge, baseline at y 119, 24 pt cap height; after "=" the expression on a line above
-// (baseline 81, 17 pt cap height, `#9e9e9e`). A long entry shrinks to 17 pt and then scrolls
-// out to the left behind a 13 pt fade.
+// The display (kit `Display/Primary`: Inter Bold 34 / 40, right-aligned in a 40 pt box at y 68,
+// 16 pt from the window edges). After "=" the expression sits on a line above it in
+// `Display Secondary`. A long entry shrinks to 22 pt and then scrolls out to the left behind a
+// 13 pt fade (calculator.md › Display).
 
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
 import 'metrics.dart';
 
-TextStyle displayStyle(double size, Color color) => TextStyle(
-  fontFamily: uiFontFamily,
-  package: 'silica_ui',
-  fontSize: size,
-  color: color,
-  height: 1,
-  fontFeatures: const [FontFeature.tabularFigures()],
-);
+const double _smallSize = 22;
+const double _expressionSize = 15;
+
+TextStyle _tabular(TextStyle style) =>
+    style.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
 double _width(String text, TextStyle style) => (TextPainter(
   text: TextSpan(text: text, style: style),
@@ -23,40 +20,39 @@ double _width(String text, TextStyle style) => (TextPainter(
   maxLines: 1,
 )..layout()).width;
 
-/// One line at `baseline`, right-aligned, shrinking from `size` to `small` and then fading out
-/// on the left when it does not fit. `suffix` is drawn after it, smaller and lower (the base
-/// of the programmer mode).
+/// One right-aligned line in a box of [height], shrinking from [style] to [small] and then
+/// fading out on the left when it does not fit. [suffix] is drawn after it, smaller and lower
+/// (the base of the programmer mode).
 class DisplayLine extends StatelessWidget {
   const DisplayLine({
     super.key,
     required this.text,
-    required this.baseline,
-    required this.size,
-    required this.color,
+    required this.style,
+    required this.height,
     this.small,
     this.suffix,
   });
 
   final String text;
-  final double baseline;
-  final double size;
+  final TextStyle style;
+  final double height;
   final double? small;
-  final Color color;
   final String? suffix;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      final suffixStyle = displayStyle(size * 0.42, color);
+      final size = style.fontSize ?? 34;
+      final suffixStyle = style.copyWith(fontSize: size * 0.42);
       final room =
           box.maxWidth -
           (suffix == null ? 0 : _width(suffix!, suffixStyle) + 1);
-      var style = displayStyle(size, color);
-      if (_width(text, style) > room && small != null) {
-        style = displayStyle(small!, color);
+      var shown = style;
+      if (_width(text, shown) > room && small != null) {
+        shown = style.copyWith(fontSize: small);
       }
-      final overflow = _width(text, style) > room;
-      Widget line = Text(text, style: style, maxLines: 1, softWrap: false);
+      final overflow = _width(text, shown) > room;
+      Widget line = Text(text, style: shown, maxLines: 1, softWrap: false);
       if (overflow) {
         line = ShaderMask(
           blendMode: BlendMode.dstIn,
@@ -77,38 +73,26 @@ class DisplayLine extends StatelessWidget {
         );
       }
       return SizedBox(
-        height: baseline + size * 0.35,
-        child: Stack(
-          children: [
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Baseline(
-                baseline: baseline,
-                baselineType: TextBaseline.alphabetic,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    line,
-                    if (suffix != null)
-                      Transform.translate(
-                        offset: Offset(1, size * 0.12),
-                        child: Text(suffix!, style: suffixStyle),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        height: height,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              line,
+              if (suffix != null) Text(suffix!, style: suffixStyle),
+            ],
+          ),
         ),
       );
     },
   );
 }
 
-/// The two lines of the display and an indicator on the left (Rad, the programmer character).
+/// The two lines of the display and an indicator on the left (Rad, the programmer character),
+/// in a box from the window's top: the main line at y 68, the expression above it.
 class Display extends StatelessWidget {
   const Display({
     super.key,
@@ -124,39 +108,57 @@ class Display extends StatelessWidget {
   final String? suffix;
 
   @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      if (upper != null && upper!.isNotEmpty)
-        Positioned.fill(
-          key: const ValueKey('expression line'),
-          child: DisplayLine(
-            text: upper!,
-            baseline: upperBaseline,
-            size: upperFontSize,
-            color: displaySecondary,
+  Widget build(BuildContext context) {
+    final colors = AmalfiTheme.of(context).colors;
+    final secondary = colors.calculator.displaySecondary;
+    final mainStyle = _tabular(AmalfiType.display(color: colors.textPrimary));
+    return Stack(
+      children: [
+        if (upper != null && upper!.isNotEmpty)
+          Positioned(
+            key: const ValueKey('expression line'),
+            left: 0,
+            right: 0,
+            top: expressionTop,
+            height: expressionHeight,
+            child: DisplayLine(
+              text: upper!,
+              style: _tabular(
+                AmalfiType.display(color: secondary).copyWith(
+                  fontSize: _expressionSize,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              height: expressionHeight,
+            ),
           ),
-        ),
-      Positioned.fill(
-        key: const ValueKey('main line'),
-        child: DisplayLine(
-          text: main,
-          baseline: mainBaseline,
-          size: mainFontSize,
-          small: upperFontSize,
-          color: displayText,
-          suffix: suffix,
-        ),
-      ),
-      if (indicator != null)
         Positioned(
+          key: const ValueKey('main line'),
           left: 0,
-          top: 0,
-          child: Baseline(
-            baseline: mainBaseline,
-            baselineType: TextBaseline.alphabetic,
-            child: Text(indicator!, style: displayStyle(13, displaySecondary)),
+          right: 0,
+          top: displayTop,
+          height: displayHeight,
+          child: DisplayLine(
+            text: main,
+            style: mainStyle,
+            small: _smallSize,
+            height: displayHeight,
+            suffix: suffix,
           ),
         ),
-    ],
-  );
+        if (indicator != null)
+          Positioned(
+            left: 0,
+            top: displayTop,
+            height: displayHeight,
+            child: Center(
+              child: Text(
+                indicator!,
+                style: AmalfiType.caption(color: secondary),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
