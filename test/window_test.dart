@@ -6,7 +6,8 @@ import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:silica_ui/silica_ui.dart' show AmalfiCalculatorColors;
+import 'package:silica_ui/silica_ui.dart'
+    show AmalfiCalculatorColors, AmalfiSymbol;
 
 void main() {
   Future<void> pump(
@@ -78,18 +79,55 @@ void main() {
     );
     expect(text.style!.fontSize, 34);
     expect(text.style!.fontWeight, FontWeight.w700);
-    // Toolbar: the Mode button is a 32 pt circle in a 40 pt piece, 8 from the edge
+    // Toolbar: the Mode button is a 36 pt circle at y 8, in a 36 pt piece 8 from the edge
     // (master Toolbar Basic: More at x 200).
     expect(
       tester.getRect(find.byKey(const ValueKey('mode button'))),
-      const Rect.fromLTWH(204, 10, 32, 32),
+      const Rect.fromLTWH(200, 8, 36, 36),
     );
-    // Kit `Toolbar History`: the sidebar toggle is a 40 pt piece at x 96.
+    // Kit `Toolbar History`: the sidebar toggle is a 44 pt piece at x 96, the 36 pt button at 100.
     expect(
       tester.getRect(find.byKey(const ValueKey('history button'))),
-      const Rect.fromLTWH(100, 10, 32, 32),
+      const Rect.fromLTWH(100, 8, 36, 36),
     );
   });
+
+  testWidgets(
+    'key labels: Inter Semibold 24 / 20, operators in Silica Symbols',
+    (tester) async {
+      await pump(tester);
+      TextStyle style(String id) => tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(ValueKey('key $id')),
+              matching: find.byType(Text),
+            ),
+          )
+          .style!;
+      expect(style('7').fontSize, 24);
+      expect(style('7').fontWeight, FontWeight.w600);
+      expect(style('clear').fontSize, 20);
+      for (final id in [
+        'divide',
+        'multiply',
+        'subtract',
+        'add',
+        'equals',
+        'negate',
+        'percent',
+        'backspace',
+      ]) {
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey('key $id')),
+            matching: find.byType(AmalfiSymbol),
+          ),
+          findsOneWidget,
+          reason: id,
+        );
+      }
+    },
+  );
 
   testWidgets(
     'the history sidebar: +220 pt, records by period, Copy and Delete',
@@ -119,6 +157,21 @@ void main() {
       expect(result, findsOneWidget);
       // The kit: header at y 60, expression at 104, result at 124.
       expect(tester.getTopLeft(find.text('Today')).dy, closeTo(60, 3));
+      final expr = tester.getRect(
+        find.descendant(
+          of: find.byKey(const ValueKey('history list')),
+          matching: find.text('12+34'),
+        ),
+      );
+      expect(expr.top, closeTo(104, 2));
+      expect(expr.right, 204);
+      expect(tester.getRect(result).top, closeTo(124, 2));
+      expect(tester.getRect(result).right, 204);
+      final resultText = tester.widget<Text>(result);
+      expect(resultText.style!.fontSize, 16);
+      expect(resultText.style!.fontWeight, FontWeight.w600);
+      // The sidebar runs under the toolbar: the rule is the full height.
+      expect(tester.getRect(find.byKey(const ValueKey('history list'))).top, 0);
       // A second calculation is listed above the first.
       await tap(tester, 'clear');
       for (final id in ['8', 'multiply', '7', 'equals']) {

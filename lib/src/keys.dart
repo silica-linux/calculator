@@ -29,31 +29,40 @@ class KeySpec {
   final String? tooltip;
 }
 
-/// Digit, function and operator labels: `Title 2` (20 / 26 semibold, kit `Key/Digit`).
-Widget Function(Color) _text(String s) =>
+/// Digit and function labels (kit `Key/Digit`, `Key/Function`): Inter Semibold, 24 for the
+/// digits, 20 for AC / C.
+Widget Function(Color) _text(String s, {double size = 24}) =>
     (color) => Text(
       s,
-      style: AmalfiType.title2(color: color),
+      style: AmalfiType.title2(color: color).copyWith(
+        fontSize: size,
+        height: 24 / size,
+        fontWeight: FontWeight.w600,
+      ),
       maxLines: 1,
       softWrap: false,
     );
 
-/// The operator keys are text in the kit (÷ × − + =); the backspace is the Icon Kit's
-/// `delete-left` at 20 pt.
-Widget Function(Color) _glyph(Glyph g) => switch (g) {
-  Glyph.divide => _text('÷'),
-  Glyph.multiply => _text('×'),
-  Glyph.minus => _text('−'),
-  Glyph.plus => _text('+'),
-  Glyph.equals => _text('='),
-  Glyph.plusMinus => _text('+/−'),
-  _ => (color) => AmalfiSymbol(
-    'delete-left',
-    size: 20,
+/// The operator, sign, percent and backspace keys are Silica Symbols Semibold 24 (kit
+/// `Key/* Symbol`, `Key/Backspace`: `calc-*` glyphs and `delete-left`).
+Widget Function(Color) _glyph(Glyph g) {
+  final name = switch (g) {
+    Glyph.divide => 'calc-divide',
+    Glyph.multiply => 'calc-multiply',
+    Glyph.minus => 'calc-subtract',
+    Glyph.plus => 'calc-add',
+    Glyph.equals => 'calc-equal',
+    Glyph.plusMinus => 'calc-plus-minus',
+    Glyph.percent => 'calc-percent',
+    Glyph.backspace => 'delete-left',
+  };
+  return (color) => AmalfiSymbol(
+    name,
+    size: 24,
+    weight: AmalfiSymbolWeight.semibold,
     color: color,
-    fallback: BackspaceIcon(color: color, size: 20),
-  ),
-};
+  );
+}
 
 /// Scientific and programmer labels: `Title 3` (kit `Key/Scientific`).
 Widget Function(Color) _label(KeyLabel l) =>
@@ -93,13 +102,13 @@ List<List<KeySpec>> _decimalPad(
       KeySpec(
         'clear',
         KeyRole.function,
-        _text(c.showsClear ? t.clear : t.clearAll),
+        _text(c.showsClear ? t.clear : t.clearAll, size: 20),
         c.clear,
       ),
       KeySpec(
         'percent',
         KeyRole.function,
-        _text('%'),
+        _glyph(Glyph.percent),
         () => c.postfix(Postfix.percent),
       ),
       op('divide', Glyph.divide, BinOp.divide),
@@ -285,7 +294,7 @@ List<List<KeySpec>> programmerKeys(ProgrammerCalculator p, KeyTexts t) {
       KeySpec(
         'clear',
         KeyRole.function,
-        _text(p.showsClear ? t.clear : t.clearAll),
+        _text(p.showsClear ? t.clear : t.clearAll, size: 20),
         p.clear,
       ),
     ],
@@ -354,10 +363,10 @@ List<List<KeySpec>> rpnKeys(RpnCalculator c, NumberStyle style, KeyTexts t) {
       KeySpec(
         'clear',
         KeyRole.function,
-        _text(c.showsClear ? t.clear : t.clearAll),
+        _text(c.showsClear ? t.clear : t.clearAll, size: 20),
         c.clear,
       ),
-      KeySpec('percent', KeyRole.function, _text('%'), c.percent),
+      KeySpec('percent', KeyRole.function, _glyph(Glyph.percent), c.percent),
       op('divide', Glyph.divide, BinOp.divide),
     ],
     [

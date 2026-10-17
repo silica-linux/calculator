@@ -1,56 +1,18 @@
-// Key faces: the operator and backspace glyph ids, the fallback backspace drawn in code when
-// the Icon Kit symbol is not installed, and labels with a raised or lowered part (x², log₁₀,
-// 2ⁿᵈ) built from two text sizes (kit `Key/Scientific`, Title 3).
+// Key faces: the symbol-key glyph ids (Silica Symbols) and labels with a raised or lowered part
+// (x², log₁₀, 2ⁿᵈ) built from two text sizes (kit `Key/Scientific`, Inter Semibold 18).
 
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
-enum Glyph { divide, multiply, minus, plus, equals, plusMinus, backspace }
-
-/// The backspace key drawn in code: a tag pointing left with an × inside.
-class BackspacePainter extends CustomPainter {
-  const BackspacePainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final s = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeJoin = StrokeJoin.round;
-    final path = Path()
-      ..moveTo(c.dx - 10, c.dy)
-      ..lineTo(c.dx - 4.5, c.dy - 8)
-      ..lineTo(c.dx + 7, c.dy - 8)
-      ..arcToPoint(
-        Offset(c.dx + 10, c.dy - 5),
-        radius: const Radius.circular(3),
-      )
-      ..lineTo(c.dx + 10, c.dy + 5)
-      ..arcToPoint(Offset(c.dx + 7, c.dy + 8), radius: const Radius.circular(3))
-      ..lineTo(c.dx - 4.5, c.dy + 8)
-      ..close();
-    canvas
-      ..drawPath(path, s)
-      ..drawLine(c.translate(-1, -3.5), c.translate(6, 3.5), s)
-      ..drawLine(c.translate(6, -3.5), c.translate(-1, 3.5), s);
-  }
-
-  @override
-  bool shouldRepaint(BackspacePainter old) => old.color != color;
-}
-
-/// The fallback backspace glyph in a box of `size`.
-class BackspaceIcon extends StatelessWidget {
-  const BackspaceIcon({super.key, required this.color, this.size = 24});
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: Size.square(size), painter: BackspacePainter(color));
+enum Glyph {
+  divide,
+  multiply,
+  minus,
+  plus,
+  equals,
+  plusMinus,
+  percent,
+  backspace,
 }
 
 /// A label with an optional raised part (`x²`, `2ⁿᵈ`), lowered part (`log₁₀`) and a part
@@ -71,7 +33,10 @@ class KeyLabelText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = AmalfiType.title3(color: color);
+    // Kit `Key/Scientific`: Inter Semibold 18.
+    final style = AmalfiType.title3(
+      color: color,
+    ).copyWith(fontSize: 18, fontWeight: FontWeight.w600);
     final size = style.fontSize ?? 17;
     final small = style.copyWith(fontSize: size * 0.62, height: 1);
     final base = style.copyWith(height: 1);

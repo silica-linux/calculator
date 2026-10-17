@@ -647,6 +647,25 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                       key: ValueKey('window drag area'),
                       child: WindowDragArea(child: SizedBox.expand()),
                     ),
+                    // Kit `History`: the sidebar runs under the toolbar (full height).
+                    if (sidebar) ...[
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: HistoryMetrics.width,
+                        child: HistorySidebar(store: history, now: _now),
+                      ),
+                      Positioned(
+                        left: HistoryMetrics.width,
+                        top: 0,
+                        bottom: 0,
+                        width: 1,
+                        child: ColoredBox(
+                          color: AmalfiTheme.of(context).colors.lineSeparator,
+                        ),
+                      ),
+                    ],
                     // Kit `Toolbar Basic|Sci|Prog`: the controls piece (the compositor draws
                     // the window buttons there), the History toggle (not in the programmer
                     // mode), a spacer and the Mode button.
@@ -687,24 +706,6 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                         ),
                       ),
                     ),
-                    if (sidebar) ...[
-                      Positioned(
-                        left: 0,
-                        top: AmalfiToolbarMetrics.toolbarHeight,
-                        bottom: 0,
-                        width: HistoryMetrics.width,
-                        child: HistorySidebar(store: history, now: _now),
-                      ),
-                      Positioned(
-                        left: HistoryMetrics.width,
-                        top: AmalfiToolbarMetrics.toolbarHeight,
-                        bottom: 0,
-                        width: 1,
-                        child: ColoredBox(
-                          color: AmalfiTheme.of(context).colors.lineSeparator,
-                        ),
-                      ),
-                    ],
                     Positioned(
                       left: displayPadding + dx,
                       right: displayPadding,

@@ -121,22 +121,27 @@ class HistoryStore extends ChangeNotifier {
   }
 }
 
-/// Measures of the sidebar (kit master `Apps/Calculator/History`, sidebar 220 × 360 below the
-/// toolbar).
+/// Measures of the sidebar (kit master `Apps/Calculator/History`: 220 wide, the full window
+/// height, running under the toolbar).
 abstract final class HistoryMetrics {
   /// The window grows by this much to the right (history.md).
   static const double width = 220;
   static const double padding = 16;
 
-  /// The first section header sits 8 below the toolbar.
-  static const double topInset = 8;
+  /// The first section header's rule row starts here (its 18 pt text sits 4 lower, at y 60).
+  static const double topInset = 56;
 
-  /// A header: its 18 pt line and the gap to the first record.
-  static const double headerHeight = 44;
+  /// A header: 4 pt above its text, the 18 pt line and 26 to the first record.
+  static const double headerHeight = 48;
 
-  /// A record: expression (14), result (18) and a separator 56 below its top; 64 apart.
-  static const double recordHeight = 56;
-  static const double recordGap = 8;
+  /// A record: expression (16), 4, result (20).
+  static const double recordHeight = 40;
+
+  /// Below a record: 12 to the separator, 1 for it and 11 to the next record.
+  static const double recordGap = 24;
+
+  /// Below the last record of a period: 12 to the next header's rule.
+  static const double periodGap = 12;
 }
 
 sealed class _Row {
@@ -242,12 +247,17 @@ class HistorySidebar extends StatelessWidget {
                               top: 0,
                               child: rule(),
                             ),
-                          Text(
-                            _title(l, row.period),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AmalfiType.headline(
-                              color: colors.textTertiary,
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: 4,
+                            child: Text(
+                              _title(l, row.period),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AmalfiType.headline(
+                                color: colors.textTertiary,
+                              ),
                             ),
                           ),
                         ],
@@ -265,37 +275,43 @@ class HistorySidebar extends StatelessWidget {
                       child: SizedBox(
                         height:
                             HistoryMetrics.recordHeight +
-                            (next is _Record ? HistoryMetrics.recordGap : 0),
+                            (next is _Record
+                                ? HistoryMetrics.recordGap
+                                : next != null
+                                ? HistoryMetrics.periodGap
+                                : 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            // Kit: the operation in Callout (secondary), the result in Semibold
+                            // 16 / 20, both right-aligned.
                             SizedBox(
-                              height: 14,
+                              height: 16,
                               child: Text(
                                 row.record.expression,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.left,
-                                style: AmalfiType.caption(
+                                textAlign: TextAlign.right,
+                                style: AmalfiType.callout(
                                   color: colors.textSecondary,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             SizedBox(
-                              height: 18,
+                              height: 20,
                               child: Text(
                                 row.record.result,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,
-                                style: AmalfiType.body(
+                                style: AmalfiType.title3(
                                   color: colors.textPrimary,
-                                ),
+                                ).copyWith(height: 20 / 16),
                               ),
                             ),
                             if (next is _Record) ...[
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 12),
                               rule(),
                             ],
                           ],
