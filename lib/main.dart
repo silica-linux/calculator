@@ -1,11 +1,13 @@
 // Calculator, the calculator of Silica.
 
+import 'dart:io' show Platform;
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
 import 'l10n/app_localizations.dart';
+import 'src/history.dart';
 import 'src/metrics.dart';
 import 'src/window.dart';
 
@@ -29,7 +31,12 @@ void main(List<String> args) {
   // A single-window utility: it quits with its window and comes back in the same place
   // (APP-LC; Ossido remembers where the window was).
   SilicaApp.quitWhenLastWindowCloses = true;
-  runApp(CalculatorApp(mode: parseMode(args)));
+  runApp(
+    CalculatorApp(
+      mode: parseMode(args),
+      history: HistoryStore.forUser(Platform.environment),
+    ),
+  );
 }
 
 /// The first system language with a translation, otherwise English.
@@ -43,13 +50,21 @@ Locale resolveLocale(List<Locale> preferred) {
 }
 
 class CalculatorApp extends StatefulWidget {
-  const CalculatorApp({super.key, this.locale, this.mode = CalcMode.basic});
+  const CalculatorApp({
+    super.key,
+    this.locale,
+    this.mode = CalcMode.basic,
+    this.history,
+  });
 
   /// A fixed language (tests); null: the system languages.
   final Locale? locale;
 
   /// The starting mode.
   final CalcMode mode;
+
+  /// The saved calculations; null keeps them in memory only (tests).
+  final HistoryStore? history;
 
   @override
   State<CalculatorApp> createState() => _CalculatorAppState();
@@ -85,7 +100,10 @@ class _CalculatorAppState extends State<CalculatorApp>
         child: Overlay(
           initialEntries: [
             OverlayEntry(
-              builder: (_) => CalculatorWindow(initialMode: widget.mode),
+              builder: (_) => CalculatorWindow(
+                initialMode: widget.mode,
+                history: widget.history,
+              ),
             ),
           ],
         ),

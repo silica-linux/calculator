@@ -27,6 +27,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get sidebarButton => 'Cronologia';
 
   @override
+  String get showHistory => 'Mostra la cronologia';
+
+  @override
+  String get hideHistory => 'Nascondi la cronologia';
+
+  @override
+  String get historyToday => 'Oggi';
+
+  @override
+  String get historyLast30Days => 'Ultimi 30 giorni';
+
+  @override
+  String get historyOlder => 'Meno recenti';
+
+  @override
+  String get historyCopy => 'Copia';
+
+  @override
+  String get historyDelete => 'Elimina';
+
+  @override
   String get error => 'Errore';
 
   @override

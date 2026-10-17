@@ -134,6 +134,48 @@ abstract class AppLocalizations {
   /// **'History'**
   String get sidebarButton;
 
+  /// View menu: the history sidebar, and the labels of its sections and record menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Show History'**
+  String get showHistory;
+
+  /// No description provided for @hideHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide History'**
+  String get hideHistory;
+
+  /// No description provided for @historyToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get historyToday;
+
+  /// No description provided for @historyLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get historyLast30Days;
+
+  /// No description provided for @historyOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Older'**
+  String get historyOlder;
+
+  /// No description provided for @historyCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get historyCopy;
+
+  /// No description provided for @historyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get historyDelete;
+
   /// Shown on the display when a calculation has no result (division by zero, root of a negative…).
   ///
   /// In en, this message translates to:

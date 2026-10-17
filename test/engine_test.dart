@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:calculator/src/engine/calculator.dart';
@@ -5,6 +6,7 @@ import 'package:calculator/src/engine/expression.dart';
 import 'package:calculator/src/engine/format.dart';
 import 'package:calculator/src/engine/programmer.dart';
 import 'package:calculator/src/engine/rational.dart';
+import 'package:calculator/src/history.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const it = NumberStyle.italian;
@@ -43,6 +45,7 @@ DecimalCalculator type(String keys) {
 }
 
 void main() {
+  historyTests();
   group('exact decimals', () {
     test('0.1 + 0.2 is exactly 0.3', () {
       final c = type('.1+.2=');
@@ -325,4 +328,37 @@ void main() {
     c.setPlaces(-4);
     expect(c.places, 0);
   });
+}
+
+void historyTests() {
+  test(
+    'history: saved newest first, grouped by period, hostile files ignored',
+    () {
+      final dir = Directory.systemTemp.createTempSync('calc-history');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final path = '${dir.path}/calculator/history.json';
+      final now = DateTime(2026, 10, 17, 12);
+      HistoryStore(path)
+        ..add('1+1', '2', now.subtract(const Duration(days: 3)))
+        ..add('2×3', '6', now);
+      final again = HistoryStore.forUser({'XDG_DATA_HOME': dir.path});
+      expect(again.records.map((r) => r.result), ['6', '2']);
+      expect(
+        [for (final r in again.records) HistoryStore.periodOf(r, now)],
+        [HistoryPeriod.today, HistoryPeriod.last30Days],
+      );
+      expect(
+        HistoryStore.periodOf(
+          HistoryRecord('x', 'y', now.subtract(const Duration(days: 90))),
+          now,
+        ),
+        HistoryPeriod.older,
+      );
+      File(path).writeAsStringSync('{not json');
+      expect(
+        HistoryStore.forUser({'XDG_DATA_HOME': dir.path}).records,
+        isEmpty,
+      );
+    },
+  );
 }

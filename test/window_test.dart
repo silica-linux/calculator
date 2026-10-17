@@ -1,6 +1,7 @@
 import 'package:calculator/main.dart';
 import 'package:calculator/src/metrics.dart';
 import 'package:calculator/src/key_button.dart';
+import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,9 +83,69 @@ void main() {
       tester.getRect(find.byKey(const ValueKey('mode button'))),
       const Rect.fromLTWH(204, 10, 32, 32),
     );
-    // The history toggle is hidden until the sidebar exists (issue #2).
-    expect(find.byKey(const ValueKey('history button')), findsNothing);
+    // Kit `Toolbar History`: the sidebar toggle is a 40 pt piece at x 96.
+    expect(
+      tester.getRect(find.byKey(const ValueKey('history button'))),
+      const Rect.fromLTWH(100, 10, 32, 32),
+    );
   });
+
+  testWidgets(
+    'the history sidebar: +220 pt, records by period, Copy and Delete',
+    (tester) async {
+      await pump(tester);
+      for (final id in ['1', '2', 'add', '3', '4', 'equals']) {
+        await tap(tester, id);
+      }
+      await tester.tap(find.byKey(const ValueKey('history button')));
+      await tester.pump(const Duration(milliseconds: 300));
+      // Kit master Apps/Calculator/History: 468 × 412, the keypad shifted by 220.
+      expect(
+        tester.getSize(find.byKey(const ValueKey('calculator basic'))),
+        const Size(468, 412),
+      );
+      expect(tester.getRect(key('0')).left, 72 + 220);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('main line'))),
+        const Rect.fromLTWH(236, 68, 216, 40),
+      );
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('12+34'), findsWidgets);
+      final result = find.descendant(
+        of: find.byKey(const ValueKey('history list')),
+        matching: find.text('46'),
+      );
+      expect(result, findsOneWidget);
+      // The kit: header at y 60, expression at 104, result at 124.
+      expect(tester.getTopLeft(find.text('Today')).dy, closeTo(60, 3));
+      // A second calculation is listed above the first.
+      await tap(tester, 'clear');
+      for (final id in ['8', 'multiply', '7', 'equals']) {
+        await tap(tester, id);
+      }
+      final first = tester.getTopLeft(
+        find.descendant(
+          of: find.byKey(const ValueKey('history list')),
+          matching: find.text('56'),
+        ),
+      );
+      expect(first.dy, lessThan(tester.getTopLeft(result).dy));
+      // Delete from the context menu.
+      await tester.tap(result, buttons: kSecondaryButton);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Copy'), findsOneWidget);
+      await tester.tap(find.text('Delete'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(result, findsNothing);
+      // Closing it gives the window back.
+      await tester.tap(find.byKey(const ValueKey('history button')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('calculator basic'))),
+        const Size(248, 412),
+      );
+    },
+  );
 
   testWidgets('keys are flat capsules from the App/Calculator palette', (
     tester,

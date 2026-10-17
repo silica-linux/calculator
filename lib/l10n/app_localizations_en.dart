@@ -27,6 +27,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sidebarButton => 'History';
 
   @override
+  String get showHistory => 'Show History';
+
+  @override
+  String get hideHistory => 'Hide History';
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyLast30Days => 'Last 30 days';
+
+  @override
+  String get historyOlder => 'Older';
+
+  @override
+  String get historyCopy => 'Copy';
+
+  @override
+  String get historyDelete => 'Delete';
+
+  @override
   String get error => 'Error';
 
   @override

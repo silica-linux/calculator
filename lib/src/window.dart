@@ -16,6 +16,7 @@ import 'engine/calculator.dart';
 import 'engine/expression.dart';
 import 'engine/format.dart';
 import 'engine/programmer.dart';
+import 'history.dart';
 import 'key_button.dart';
 import 'keys.dart';
 import 'metrics.dart';
@@ -26,9 +27,16 @@ import 'programmer_panel.dart';
 Future<bool> requestWindowSize(Size size) => SilicaWindow.setFixedSize(size);
 
 class CalculatorWindow extends StatefulWidget {
-  const CalculatorWindow({super.key, this.initialMode = CalcMode.basic});
+  const CalculatorWindow({
+    super.key,
+    this.initialMode = CalcMode.basic,
+    this.history,
+  });
 
   final CalcMode initialMode;
+
+  /// The records of the calculations; null keeps them in memory only (tests).
+  final HistoryStore? history;
 
   @override
   State<CalculatorWindow> createState() => CalculatorWindowState();
@@ -43,6 +51,16 @@ class CalculatorWindowState extends State<CalculatorWindow> {
 
   /// Shift held in the scientific mode shows the 2nd functions while it is down.
   bool _shiftSecond = false;
+
+  late final HistoryStore history = widget.history ?? HistoryStore();
+
+  /// The history sidebar is open (⌃⌘S): the window is 220 pt wider and the display and the
+  /// keypad shift right. Not in the programmer mode, which has no history.
+  bool showHistory = false;
+  bool _wasEvaluated = false;
+
+  /// The wall clock: the history groups the records by day.
+  DateTime _now() => DateTime.now();
 
   /// View › Hide Thousands Separators: results and entries without digit grouping.
   bool thousands = true;
@@ -63,21 +81,52 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     super.initState();
     _lifecycle;
     unawaited(requestWindowSize(windowSize[widget.initialMode]!));
-    decimal.addListener(_changed);
+    _wasEvaluated = decimal.evaluated;
+    decimal.addListener(_decimalChanged);
     programmer.addListener(_changed);
+    history.addListener(_changed);
   }
 
   @override
   void dispose() {
     _lifecycle.dispose();
-    decimal.removeListener(_changed);
+    decimal.removeListener(_decimalChanged);
     programmer.removeListener(_changed);
+    history.removeListener(_changed);
     _focus.dispose();
     _flash.dispose();
     super.dispose();
   }
 
   void _changed() => setState(() {});
+
+  /// A result ("=") goes into the history, once.
+  void _decimalChanged() {
+    if (decimal.evaluated && !_wasEvaluated) {
+      history.add(
+        renderTokens(decimal.previous, _style),
+        formatNumber(decimal.result, _style, places: decimal.places),
+        _now(),
+      );
+    }
+    _wasEvaluated = decimal.evaluated;
+    _changed();
+  }
+
+  /// The window of [m] with or without the history sidebar.
+  Size _sizeOf(CalcMode m, bool history) {
+    final base = windowSize[m]!;
+    return history && m != CalcMode.programmer
+        ? Size(base.width + HistoryMetrics.width, base.height)
+        : base;
+  }
+
+  /// View › Show / Hide History (⌃⌘S) and the toolbar button.
+  void toggleHistory() {
+    if (mode == CalcMode.programmer) return;
+    setState(() => showHistory = !showHistory);
+    unawaited(requestWindowSize(_sizeOf(mode, showHistory)));
+  }
 
   NumberStyle get _style {
     final style = NumberStyle.forLanguage(
@@ -96,7 +145,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     if (next == mode) return;
     // The mode switch is instant: size and keypad change in one frame (silica-reference CA-01).
     setState(() => mode = next);
-    unawaited(requestWindowSize(windowSize[next]!));
+    unawaited(requestWindowSize(_sizeOf(next, showHistory)));
   }
 
   List<List<KeySpec>> _keys(KeyTexts texts) => switch (mode) {
@@ -293,9 +342,19 @@ class CalculatorWindowState extends State<CalculatorWindow> {
             ],
           ),
           // A fixed-size window has no full screen (CA-01: the item is disabled).
-          const PlatformMenuItemGroup(
+          PlatformMenuItemGroup(
             members: [
-              SilicaMenuItem.system(
+              SilicaMenuItem(
+                label: showHistory && decimals ? l.hideHistory : l.showHistory,
+                enabled: decimals,
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyS,
+                  control: true,
+                  meta: true,
+                ),
+                onSelected: toggleHistory,
+              ),
+              const SilicaMenuItem.system(
                 SilicaMenuItemRole.fullScreen,
                 enabled: false,
               ),
@@ -348,7 +407,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = AmalfiTheme.of(context);
-    final size = windowSize[mode]!;
+    final size = _sizeOf(mode, showHistory);
     final texts = KeyTexts(
       clearAll: l.keyClearAll,
       clear: l.keyClear,
@@ -358,6 +417,8 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     final width = keyWidth[mode]!;
     final top = keypadTop[mode]!;
     final programmerMode = mode == CalcMode.programmer;
+    final sidebar = showHistory && !programmerMode;
+    final dx = sidebar ? HistoryMetrics.width : 0.0;
     final error = programmerMode ? programmer.error : decimal.error;
     return SilicaMenuBar(
       menus: menus(l),
@@ -388,8 +449,8 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                       child: WindowDragArea(child: SizedBox.expand()),
                     ),
                     // Kit `Toolbar Basic|Sci|Prog`: the controls piece (the compositor draws
-                    // the window buttons there), a spacer and the Mode button. The history
-                    // toggle of the kit is not shown until the sidebar exists (issue #2).
+                    // the window buttons there), the History toggle (not in the programmer
+                    // mode), a spacer and the Mode button.
                     Positioned(
                       left: 0,
                       right: 0,
@@ -400,6 +461,15 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                         active: _active,
                         children: [
                           const SizedBox(width: controlsWidth),
+                          if (!programmerMode)
+                            AmalfiToolbarPiece(
+                              child: AmalfiToolbarButton(
+                                key: const ValueKey('history button'),
+                                semanticLabel: l.sidebarButton,
+                                icon: const AmalfiSymbol('sidebar'),
+                                onPressed: toggleHistory,
+                              ),
+                            ),
                           const AmalfiSpacerPiece(),
                           AmalfiToolbarPiece(
                             child: Builder(
@@ -414,8 +484,26 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                         ],
                       ),
                     ),
+                    if (sidebar) ...[
+                      Positioned(
+                        left: 0,
+                        top: AmalfiToolbarMetrics.toolbarHeight,
+                        bottom: 0,
+                        width: HistoryMetrics.width,
+                        child: HistorySidebar(store: history, now: _now),
+                      ),
+                      Positioned(
+                        left: HistoryMetrics.width,
+                        top: AmalfiToolbarMetrics.toolbarHeight,
+                        bottom: 0,
+                        width: 1,
+                        child: ColoredBox(
+                          color: AmalfiTheme.of(context).colors.lineSeparator,
+                        ),
+                      ),
+                    ],
                     Positioned(
-                      left: displayPadding,
+                      left: displayPadding + dx,
                       right: displayPadding,
                       top: 0,
                       height: top,
@@ -450,7 +538,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                     for (var r = 0; r < rows.length; r++)
                       for (var c = 0; c < rows[r].length; c++)
                         Positioned(
-                          left: keypadLeft + c * columnPitch(mode),
+                          left: keypadLeft + dx + c * columnPitch(mode),
                           top: top + r * rowPitch,
                           child: KeyButton(
                             id: rows[r][c].id,
