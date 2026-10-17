@@ -16,11 +16,16 @@ import 'engine/calculator.dart';
 import 'engine/expression.dart';
 import 'engine/format.dart';
 import 'engine/programmer.dart';
+import 'engine/rational.dart';
+import 'engine/rpn.dart';
+import 'engine/units.dart';
+import 'extras.dart';
 import 'history.dart';
 import 'key_button.dart';
 import 'keys.dart';
 import 'metrics.dart';
 import 'programmer_panel.dart';
+import 'settings.dart';
 
 /// Fixes the window to the size of a mode (fixed sizes per mode, calculator.md): the limits
 /// and the size together, so the window cannot be resized and the zoom button is disabled.
@@ -31,9 +36,17 @@ class CalculatorWindow extends StatefulWidget {
     super.key,
     this.initialMode = CalcMode.basic,
     this.history,
+    this.settings,
+    this.initialExtra = CalcExtra.none,
   });
 
   final CalcMode initialMode;
+
+  /// Convert or RPN from the start (basic mode only).
+  final CalcExtra initialExtra;
+
+  /// What the app keeps (the first-launch tip); null: no tip (tests).
+  final AppSettings? settings;
 
   /// The records of the calculations; null keeps them in memory only (tests).
   final HistoryStore? history;
@@ -44,6 +57,16 @@ class CalculatorWindow extends StatefulWidget {
 
 class CalculatorWindowState extends State<CalculatorWindow> {
   late CalcMode mode = widget.initialMode;
+
+  /// Convert or RPN (basic mode only).
+  late CalcExtra extra = widget.initialMode == CalcMode.basic
+      ? widget.initialExtra
+      : CalcExtra.none;
+  final RpnCalculator rpn = RpnCalculator();
+  UnitCategory convertCategory = UnitCategory.length;
+  late ConvertUnit fromUnit = defaultPair(convertCategory).$1;
+  late ConvertUnit toUnit = defaultPair(convertCategory).$2;
+  final GlobalKey _modeButtonKey = GlobalKey();
   final DecimalCalculator decimal = DecimalCalculator();
   final ProgrammerCalculator programmer = ProgrammerCalculator();
   final KeyFlash _flash = KeyFlash();
@@ -80,7 +103,11 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   void initState() {
     super.initState();
     _lifecycle;
-    unawaited(requestWindowSize(windowSize[widget.initialMode]!));
+    unawaited(requestWindowSize(_sizeOf(mode, false)));
+    rpn.addListener(_changed);
+    if (widget.settings case final settings? when !settings.tipShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showTip(settings));
+    }
     _wasEvaluated = decimal.evaluated;
     decimal.addListener(_decimalChanged);
     programmer.addListener(_changed);
@@ -92,6 +119,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     _lifecycle.dispose();
     decimal.removeListener(_decimalChanged);
     programmer.removeListener(_changed);
+    rpn.removeListener(_changed);
     history.removeListener(_changed);
     _focus.dispose();
     _flash.dispose();
@@ -116,9 +144,104 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   /// The window of [m] with or without the history sidebar.
   Size _sizeOf(CalcMode m, bool history) {
     final base = windowSize[m]!;
-    return history && m != CalcMode.programmer
-        ? Size(base.width + HistoryMetrics.width, base.height)
+    final size = m == CalcMode.basic
+        ? Size(base.width, extraHeight[extra]!)
         : base;
+    return history && m != CalcMode.programmer
+        ? Size(size.width + HistoryMetrics.width, size.height)
+        : size;
+  }
+
+  /// The first-launch tip over the Mode button (shown once).
+  void _showTip(AppSettings settings) {
+    if (!mounted) return;
+    final box = _modeButtonKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+    final l = AppLocalizations.of(context);
+    settings
+      ..tipShown = true
+      ..save();
+    unawaited(
+      showAmalfiPopover(
+        context: context,
+        anchor: box.localToGlobal(Offset.zero) & box.size,
+        builder: (context, dismiss) => AmalfiPopoverText(
+          title: l.tipTitle,
+          body: l.tipBody,
+          action: AmalfiLinkButton(
+            key: const ValueKey('tip dismiss'),
+            label: l.tipDismiss,
+            onPressed: dismiss,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Convert and RPN mode are toggles of the basic mode: choosing one leaves the others.
+  void toggleExtra(CalcExtra e) {
+    final next = extra == e && mode == CalcMode.basic ? CalcExtra.none : e;
+    setState(() {
+      mode = CalcMode.basic;
+      extra = next;
+      if (next == CalcExtra.rpn) showHistory = false;
+    });
+    unawaited(requestWindowSize(_sizeOf(mode, showHistory)));
+  }
+
+  void _pickUnit(Rect anchor, bool from) {
+    final language = Localizations.localeOf(context).languageCode;
+    unawaited(
+      showAmalfiPopover(
+        context: context,
+        anchor: anchor,
+        padding: const EdgeInsets.all(12),
+        builder: (context, dismiss) => UnitPicker(
+          current: from ? fromUnit : toUnit,
+          language: language,
+          onChosen: (u) {
+            dismiss();
+            setState(() {
+              if (u.category != convertCategory) {
+                // Another category: both units follow it.
+                convertCategory = u.category;
+                final pair = defaultPair(u.category);
+                fromUnit = from ? u : pair.$1;
+                toUnit = from ? pair.$2 : u;
+                if (fromUnit == toUnit)
+                  toUnit = pair.$1 == u ? pair.$2 : pair.$1;
+              } else if (from) {
+                fromUnit = u;
+              } else {
+                toUnit = u;
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  /// The swap button: the units trade places and the result becomes the typed value.
+  void _swapUnits() {
+    final result = _converted();
+    setState(() {
+      final t = fromUnit;
+      fromUnit = toUnit;
+      toUnit = t;
+    });
+    if (result != null) decimal.setValue(result);
+  }
+
+  Rational? _converted() {
+    if (decimal.error) return null;
+    try {
+      return Rational.fromDouble(
+        convertValue(decimal.currentValue().toDouble(), fromUnit, toUnit),
+      );
+    } on CalcError {
+      return null;
+    }
   }
 
   /// View › Show / Hide History (⌃⌘S) and the toolbar button.
@@ -144,11 +267,15 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   void setMode(CalcMode next) {
     if (next == mode) return;
     // The mode switch is instant: size and keypad change in one frame (silica-reference CA-01).
-    setState(() => mode = next);
+    setState(() {
+      mode = next;
+      extra = CalcExtra.none;
+    });
     unawaited(requestWindowSize(_sizeOf(next, showHistory)));
   }
 
   List<List<KeySpec>> _keys(KeyTexts texts) => switch (mode) {
+    CalcMode.basic when extra == CalcExtra.rpn => rpnKeys(rpn, _style, texts),
     CalcMode.basic => basicKeys(decimal, _style, texts),
     CalcMode.scientific => scientificKeys(decimal, _style, texts),
     CalcMode.programmer => programmerKeys(programmer, texts),
@@ -157,6 +284,8 @@ class CalculatorWindowState extends State<CalculatorWindow> {
   Future<void> copy() async {
     final text = mode == CalcMode.programmer
         ? programmer.copyText()
+        : extra == CalcExtra.rpn
+        ? rpn.copyText(_style, places: decimal.places)
         : decimal.copyText(_style);
     await Clipboard.setData(ClipboardData(text: text));
   }
@@ -167,13 +296,44 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     if (text == null) return;
     if (mode == CalcMode.programmer) {
       programmer.paste(text);
+    } else if (extra == CalcExtra.rpn) {
+      rpn.paste(text, _style);
     } else {
       decimal.paste(text, _style);
     }
   }
 
   /// The key a typed character stands for: its id and what it does.
+  (String, VoidCallback)? _typedRpn(KeyEvent event) {
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      return ('equals', rpn.enter);
+    }
+    if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.delete) {
+      return ('clear', rpn.clear);
+    }
+    if (key == LogicalKeyboardKey.backspace)
+      return ('backspace', rpn.backspace);
+    final ch = event.character;
+    if (ch == null || ch.isEmpty) return null;
+    if (RegExp(r'^[0-9]$').hasMatch(ch)) return (ch, () => rpn.digit(ch));
+    return switch (ch) {
+      '.' || ',' => ('decimal', rpn.decimalPoint),
+      '+' => ('add', () => rpn.operator(BinOp.add)),
+      '-' => ('subtract', () => rpn.operator(BinOp.subtract)),
+      '*' || 'x' => ('multiply', () => rpn.operator(BinOp.multiply)),
+      '/' || ':' => ('divide', () => rpn.operator(BinOp.divide)),
+      '%' => ('percent', rpn.percent),
+      '=' => ('equals', rpn.enter),
+      _ => null,
+    };
+  }
+
   (String, VoidCallback)? _typed(KeyEvent event) {
+    if (mode == CalcMode.basic && extra == CalcExtra.rpn) {
+      return _typedRpn(event);
+    }
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter) {
@@ -323,6 +483,29 @@ class CalculatorWindowState extends State<CalculatorWindow> {
           PlatformMenuItemGroup(
             members: [
               SilicaMenuItem(
+                label: l.menuConvert,
+                checked: extra == CalcExtra.convert,
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyC,
+                  meta: true,
+                  alt: true,
+                ),
+                onSelected: () => toggleExtra(CalcExtra.convert),
+              ),
+              SilicaMenuItem(
+                label: l.menuRpn,
+                checked: extra == CalcExtra.rpn,
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyR,
+                  meta: true,
+                ),
+                onSelected: () => toggleExtra(CalcExtra.rpn),
+              ),
+            ],
+          ),
+          PlatformMenuItemGroup(
+            members: [
+              SilicaMenuItem(
                 label: thousands ? l.hideThousands : l.showThousands,
                 enabled: decimals,
                 onSelected: toggleThousands,
@@ -346,7 +529,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
             members: [
               SilicaMenuItem(
                 label: showHistory && decimals ? l.hideHistory : l.showHistory,
-                enabled: decimals,
+                enabled: decimals && extra != CalcExtra.rpn,
                 shortcut: const SingleActivator(
                   LogicalKeyboardKey.keyS,
                   control: true,
@@ -379,6 +562,19 @@ class CalculatorWindowState extends State<CalculatorWindow> {
         checked: m == mode,
         onSelected: () => setMode(m),
       ),
+    const AmalfiMenuDivider(),
+    AmalfiMenuAction(
+      l.menuConvert,
+      shortcut: '⌥⌘C',
+      checked: extra == CalcExtra.convert,
+      onSelected: () => toggleExtra(CalcExtra.convert),
+    ),
+    AmalfiMenuAction(
+      l.menuRpn,
+      shortcut: '⌘R',
+      checked: extra == CalcExtra.rpn,
+      onSelected: () => toggleExtra(CalcExtra.rpn),
+    ),
   ];
 
   /// The Mode button's menu, below the button and ending with it (Escape or a click outside
@@ -415,9 +611,13 @@ class CalculatorWindowState extends State<CalculatorWindow> {
     );
     final rows = _keys(texts);
     final width = keyWidth[mode]!;
-    final top = keypadTop[mode]!;
+    final top = mode == CalcMode.basic
+        ? extraKeypadTop[extra]!
+        : keypadTop[mode]!;
+    final convertMode = mode == CalcMode.basic && extra == CalcExtra.convert;
+    final rpnMode = mode == CalcMode.basic && extra == CalcExtra.rpn;
     final programmerMode = mode == CalcMode.programmer;
-    final sidebar = showHistory && !programmerMode;
+    final sidebar = showHistory && !programmerMode && !rpnMode;
     final dx = sidebar ? HistoryMetrics.width : 0.0;
     final error = programmerMode ? programmer.error : decimal.error;
     return SilicaMenuBar(
@@ -462,7 +662,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                           active: _active,
                           children: [
                             const SizedBox(width: controlsWidth),
-                            if (!programmerMode)
+                            if (!programmerMode && !rpnMode)
                               AmalfiToolbarPiece(
                                 child: AmalfiToolbarButton(
                                   key: const ValueKey('history button'),
@@ -474,6 +674,7 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                             const AmalfiSpacerPiece(),
                             AmalfiToolbarPiece(
                               child: Builder(
+                                key: _modeButtonKey,
                                 builder: (button) => AmalfiToolbarButton(
                                   key: const ValueKey('mode button'),
                                   semanticLabel: l.modeButton,
@@ -511,25 +712,66 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                       height: top,
                       child: WindowDragArea(
                         key: const ValueKey('display drag area'),
-                        child: Display(
-                          main: error
-                              ? l.error
-                              : programmerMode
-                              ? programmer.mainText()
-                              : decimal.mainText(_style),
-                          upper: programmerMode
-                              ? null
-                              : decimal.upperText(_style),
-                          suffix: programmerMode && !error
-                              ? '${programmer.base}'
-                              : null,
-                          indicator: programmerMode
-                              ? programmer.character()
-                              : mode == CalcMode.scientific &&
-                                    decimal.angle == AngleUnit.radians
-                              ? l.radiansIndicator
-                              : null,
-                        ),
+                        child: convertMode
+                            ? ConvertDisplay(
+                                from: fromUnit,
+                                to: toUnit,
+                                fromText: error
+                                    ? l.error
+                                    : decimal.mainText(_style),
+                                toText: switch (_converted()) {
+                                  final r? => formatNumber(
+                                    r,
+                                    _style,
+                                    places: decimal.places,
+                                  ),
+                                  null => l.error,
+                                },
+                                onFromUnit: (a) => _pickUnit(a, true),
+                                onToUnit: (a) => _pickUnit(a, false),
+                                onSwap: _swapUnits,
+                              )
+                            : rpnMode
+                            ? RpnDisplay(
+                                lines: [
+                                  rpn.error
+                                      ? l.error
+                                      : rpn.lineText(
+                                          0,
+                                          _style,
+                                          places: decimal.places,
+                                        ),
+                                  for (var i = 1; i < 4; i++)
+                                    rpn.lineText(
+                                      i,
+                                      _style,
+                                      places: decimal.places,
+                                    ),
+                                ],
+                                onSwap: rpn.swap,
+                                onRollDown: rpn.rollDown,
+                                onRollUp: rpn.rollUp,
+                                onDrop: rpn.drop,
+                              )
+                            : Display(
+                                main: error
+                                    ? l.error
+                                    : programmerMode
+                                    ? programmer.mainText()
+                                    : decimal.mainText(_style),
+                                upper: programmerMode
+                                    ? null
+                                    : decimal.upperText(_style),
+                                suffix: programmerMode && !error
+                                    ? '${programmer.base}'
+                                    : null,
+                                indicator: programmerMode
+                                    ? programmer.character()
+                                    : mode == CalcMode.scientific &&
+                                          decimal.angle == AngleUnit.radians
+                                    ? l.radiansIndicator
+                                    : null,
+                              ),
                       ),
                     ),
                     if (programmerMode)

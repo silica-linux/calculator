@@ -9,6 +9,23 @@ import 'package:flutter/widgets.dart';
 
 enum CalcMode { basic, scientific, programmer }
 
+/// What the basic mode can be turned into: Convert (units, two lines) or RPN (a four-line
+/// stack and its keys), both toggles of the Mode menu.
+enum CalcExtra { none, convert, rpn }
+
+/// Basic with Convert (kit `Apps/Calculator/Convert`: 248 × 444, keys from y 156) and with RPN
+/// (`Apps/Calculator/RPN`: 248 × 528, keys from y 240).
+const Map<CalcExtra, double> extraHeight = {
+  CalcExtra.none: 412,
+  CalcExtra.convert: 444,
+  CalcExtra.rpn: 528,
+};
+const Map<CalcExtra, double> extraKeypadTop = {
+  CalcExtra.none: 124,
+  CalcExtra.convert: 156,
+  CalcExtra.rpn: 240,
+};
+
 /// The window of each mode: fixed size (kit masters 248 × 412, 664 × 412, 528 × 576).
 const Map<CalcMode, Size> windowSize = {
   CalcMode.basic: Size(248, 412),

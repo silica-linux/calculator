@@ -6,6 +6,8 @@ import 'package:calculator/src/engine/expression.dart';
 import 'package:calculator/src/engine/format.dart';
 import 'package:calculator/src/engine/programmer.dart';
 import 'package:calculator/src/engine/rational.dart';
+import 'package:calculator/src/engine/rpn.dart';
+import 'package:calculator/src/engine/units.dart';
 import 'package:calculator/src/history.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -45,6 +47,7 @@ DecimalCalculator type(String keys) {
 }
 
 void main() {
+  rpnTests();
   historyTests();
   group('exact decimals', () {
     test('0.1 + 0.2 is exactly 0.3', () {
@@ -361,4 +364,123 @@ void historyTests() {
       );
     },
   );
+}
+
+void rpnTests() {
+  group('rpn', () {
+    RpnCalculator typeRpn(String keys) {
+      final c = RpnCalculator();
+      for (final k in keys.split('')) {
+        switch (k) {
+          case ' ':
+            c.enter();
+          case '+':
+            c.operator(BinOp.add);
+          case '-':
+            c.operator(BinOp.subtract);
+          case '*':
+            c.operator(BinOp.multiply);
+          case '/':
+            c.operator(BinOp.divide);
+          case '.':
+            c.decimalPoint();
+          default:
+            c.digit(k);
+        }
+      }
+      return c;
+    }
+
+    String x(RpnCalculator c) => c.lineText(0, en);
+
+    test('Enter lifts the stack, operators combine y and x', () {
+      expect(x(typeRpn('12 3+')), '15');
+      expect(x(typeRpn('12 3-')), '9');
+      expect(x(typeRpn('12 3*')), '36');
+      expect(x(typeRpn('12 4/')), '3');
+      final c = typeRpn('4 3 12 0');
+      expect(
+        [for (var i = 0; i < 4; i++) c.lineText(i, en)],
+        ['0', '12', '3', '4'],
+      );
+    });
+
+    test('a chain: (2 + 3) × 4', () {
+      expect(x(typeRpn('2 3+4*')), '20');
+    });
+
+    test('division by zero is an error and keeps the stack', () {
+      final c = typeRpn('5 0/');
+      expect(c.error, isTrue);
+      expect(c.stack[0], Rational.zero);
+      expect(c.stack[1], Rational.fromInt(5));
+    });
+
+    test('swap, rolls and drop', () {
+      final c = typeRpn('1 2 3 4');
+      c.enter();
+      // t z y x = 2 3 4 4 after Enter; make it distinct.
+      c.drop();
+      c.digit('9');
+      expect(
+        [for (var i = 3; i >= 0; i--) c.lineText(i, en)],
+        ['2', '3', '4', '9'],
+      );
+      c.swap();
+      expect(c.lineText(0, en), '4');
+      expect(c.lineText(1, en), '9');
+      c.rollDown();
+      expect(
+        [for (var i = 3; i >= 0; i--) c.lineText(i, en)],
+        ['4', '2', '3', '9'],
+      );
+      c.rollUp();
+      expect(c.lineText(0, en), '4');
+      expect(c.lineText(3, en), '2');
+    });
+
+    test('C clears the entry, AC the stack; negate and percent', () {
+      final c = typeRpn('50 8');
+      c.percent();
+      expect(x(c), '4');
+      c.negate();
+      expect(x(c), '−4');
+      c.digit('7');
+      c.clear();
+      expect(x(c), '0');
+      c.clear();
+      expect(c.stack.every((v) => v.isZero), isTrue);
+    });
+  });
+
+  group('units', () {
+    double conv(String from, String to, double v) =>
+        convertValue(v, unitById(from), unitById(to));
+
+    test('length, mass, time, data', () {
+      expect(conv('km', 'mi', 1), closeTo(0.621371, 1e-6));
+      expect(conv('in', 'cm', 1), closeTo(2.54, 1e-12));
+      expect(conv('lb', 'kg', 1), closeTo(0.45359237, 1e-12));
+      expect(conv('h', 'min', 2), closeTo(120, 1e-9));
+      expect(conv('gib', 'mb', 1), closeTo(1073.741824, 1e-9));
+    });
+
+    test('temperature is affine', () {
+      expect(conv('c', 'f', 100), closeTo(212, 1e-9));
+      expect(conv('f', 'c', -40), closeTo(-40, 1e-9));
+      expect(conv('c', 'k', 0), closeTo(273.15, 1e-9));
+      expect(conv('k', 'f', 0), closeTo(-459.67, 1e-9));
+    });
+
+    test('every category has two units and a default pair of its own', () {
+      for (final c in UnitCategory.values) {
+        expect(c.units.length, greaterThanOrEqualTo(3));
+        final (a, b) = defaultPair(c);
+        expect(a.category, c);
+        expect(b.category, c);
+        expect(a, isNot(b));
+      }
+      expect(allUnits.map((u) => u.id).toSet().length, allUnits.length);
+    });
+  });
 }

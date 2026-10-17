@@ -28,5 +28,20 @@
   "menuHelp": "Aiuto",
   "decimalPlaces": "Cifre decimali",
   "hideThousands": "Nascondi i separatori delle migliaia",
-  "showThousands": "Mostra i separatori delle migliaia"
+  "showThousands": "Mostra i separatori delle migliaia",
+  "menuConvert": "Converti",
+  "menuRpn": "Modalità RPN",
+  "fromUnit": "Unità di partenza",
+  "toUnit": "Unità di arrivo",
+  "swapUnits": "Scambia le unità",
+  "searchUnits": "Cerca unità",
+  "noUnits": "Nessuna unità trovata",
+  "stackSwap": "Scambia x e y",
+  "stackRollDown": "Ruota lo stack verso il basso",
+  "stackRollUp": "Ruota lo stack verso l’alto",
+  "stackDrop": "Elimina",
+  "stackDropTip": "Elimina x",
+  "tipTitle": "Menu delle modalità",
+  "tipBody": "Passa tra Base, Scientifica e Programmatore, converti le unità o attiva l’RPN.",
+  "tipDismiss": "Ho capito"
 }

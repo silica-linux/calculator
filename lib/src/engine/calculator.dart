@@ -188,6 +188,20 @@ class DecimalCalculator extends ChangeNotifier {
     _changed();
   }
 
+  /// Makes [value] the number typed (Convert's swap): nothing else stays.
+  void setValue(Rational value) {
+    _startOver();
+    final text = formatNumber(
+      value,
+      const NumberStyle(decimal: '.', group: ''),
+      places: places,
+    ).replaceAll('−', '-');
+    if (Rational.tryParse(text) != null && !text.contains('e')) {
+      entry = text;
+    }
+    _changed();
+  }
+
   /// AC / C (and Esc): everything typed goes, the memory stays.
   void clear() {
     _startOver();

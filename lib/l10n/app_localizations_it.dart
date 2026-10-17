@@ -95,4 +95,50 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showThousands => 'Mostra i separatori delle migliaia';
+
+  @override
+  String get menuConvert => 'Converti';
+
+  @override
+  String get menuRpn => 'Modalità RPN';
+
+  @override
+  String get fromUnit => 'Unità di partenza';
+
+  @override
+  String get toUnit => 'Unità di arrivo';
+
+  @override
+  String get swapUnits => 'Scambia le unità';
+
+  @override
+  String get searchUnits => 'Cerca unità';
+
+  @override
+  String get noUnits => 'Nessuna unità trovata';
+
+  @override
+  String get stackSwap => 'Scambia x e y';
+
+  @override
+  String get stackRollDown => 'Ruota lo stack verso il basso';
+
+  @override
+  String get stackRollUp => 'Ruota lo stack verso l’alto';
+
+  @override
+  String get stackDrop => 'Elimina';
+
+  @override
+  String get stackDropTip => 'Elimina x';
+
+  @override
+  String get tipTitle => 'Menu delle modalità';
+
+  @override
+  String get tipBody =>
+      'Passa tra Base, Scientifica e Programmatore, converti le unità o attiva l’RPN.';
+
+  @override
+  String get tipDismiss => 'Ho capito';
 }

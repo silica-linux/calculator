@@ -271,6 +271,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Thousands Separators'**
   String get showThousands;
+
+  /// Mode menu and View menu: turn on unit conversion.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get menuConvert;
+
+  /// Mode menu and View menu: turn on reverse Polish notation.
+  ///
+  /// In en, this message translates to:
+  /// **'RPN Mode'**
+  String get menuRpn;
+
+  /// Accessibility label of the pop-up that picks the unit of the typed value.
+  ///
+  /// In en, this message translates to:
+  /// **'From unit'**
+  String get fromUnit;
+
+  /// Accessibility label of the pop-up that picks the unit of the result.
+  ///
+  /// In en, this message translates to:
+  /// **'To unit'**
+  String get toUnit;
+
+  /// Tooltip of the button that swaps the two units.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap units'**
+  String get swapUnits;
+
+  /// Placeholder of the unit picker's search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search units'**
+  String get searchUnits;
+
+  /// Shown when the unit search matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No units found'**
+  String get noUnits;
+
+  /// Tooltip of the RPN key x⇄y.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap x and y'**
+  String get stackSwap;
+
+  /// Tooltip of the RPN key R↓.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll the stack down'**
+  String get stackRollDown;
+
+  /// Tooltip of the RPN key R↑.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll the stack up'**
+  String get stackRollUp;
+
+  /// Label of the RPN key that drops x.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get stackDrop;
+
+  /// Tooltip of the RPN key that drops x.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop x'**
+  String get stackDropTip;
+
+  /// Title of the first-launch popover over the Mode button.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode menu'**
+  String get tipTitle;
+
+  /// Text of the first-launch popover.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between Basic, Scientific and Programmer, convert units or turn on RPN.'**
+  String get tipBody;
+
+  /// Button of the first-launch popover.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get tipDismiss;
 }
 
 class _AppLocalizationsDelegate

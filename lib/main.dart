@@ -9,6 +9,7 @@ import 'package:silica_ui/silica_ui.dart';
 import 'l10n/app_localizations.dart';
 import 'src/history.dart';
 import 'src/metrics.dart';
+import 'src/settings.dart';
 import 'src/window.dart';
 
 /// `--mode=basic|scientific|programmer` (passed with the embedder's `--dart-arg`): the
@@ -35,6 +36,7 @@ void main(List<String> args) {
     CalculatorApp(
       mode: parseMode(args),
       history: HistoryStore.forUser(Platform.environment),
+      settings: AppSettings.forUser(Platform.environment),
     ),
   );
 }
@@ -54,7 +56,9 @@ class CalculatorApp extends StatefulWidget {
     super.key,
     this.locale,
     this.mode = CalcMode.basic,
+    this.extra = CalcExtra.none,
     this.history,
+    this.settings,
   });
 
   /// A fixed language (tests); null: the system languages.
@@ -63,8 +67,14 @@ class CalculatorApp extends StatefulWidget {
   /// The starting mode.
   final CalcMode mode;
 
+  /// Convert or RPN from the start (basic mode only).
+  final CalcExtra extra;
+
   /// The saved calculations; null keeps them in memory only (tests).
   final HistoryStore? history;
+
+  /// What the app keeps between launches; null: nothing (tests).
+  final AppSettings? settings;
 
   @override
   State<CalculatorApp> createState() => _CalculatorAppState();
@@ -102,7 +112,9 @@ class _CalculatorAppState extends State<CalculatorApp>
             OverlayEntry(
               builder: (_) => CalculatorWindow(
                 initialMode: widget.mode,
+                initialExtra: widget.extra,
                 history: widget.history,
+                settings: widget.settings,
               ),
             ),
           ],

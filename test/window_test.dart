@@ -1,4 +1,5 @@
 import 'package:calculator/main.dart';
+import 'package:calculator/src/settings.dart';
 import 'package:calculator/src/metrics.dart';
 import 'package:calculator/src/key_button.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton;
@@ -363,5 +364,117 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('history button')));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const ValueKey('history drag area')), findsOneWidget);
+  });
+
+  Future<void> pumpExtra(
+    WidgetTester tester,
+    CalcExtra extra, {
+    AppSettings? settings,
+  }) async {
+    tester.view.physicalSize = const Size(674, 582);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      CalculatorApp(
+        locale: const Locale('en'),
+        extra: extra,
+        settings: settings,
+      ),
+    );
+    await tester.pump();
+  }
+
+  String lineText(WidgetTester tester, String id) => tester
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(ValueKey(id)),
+          matching: find.byType(Text),
+        ),
+      )
+      .data!;
+
+  testWidgets('RPN: 248 x 528, stack lines, keys from y 240 (kit RPN)', (
+    tester,
+  ) async {
+    await pumpExtra(tester, CalcExtra.rpn);
+    expect(
+      tester.getRect(find.byKey(const ValueKey('calculator basic'))),
+      const Rect.fromLTWH(0, 0, 248, 528),
+    );
+    expect(
+      tester.getRect(key('backspace')),
+      const Rect.fromLTWH(16, 240, 48, 48),
+    );
+    expect(
+      tester.getRect(find.byKey(const ValueKey('stack key swap'))),
+      const Rect.fromLTWH(16, 204, 48, 28),
+    );
+    expect(
+      tester.getRect(find.byKey(const ValueKey('stack key drop'))),
+      const Rect.fromLTWH(184, 204, 48, 28),
+    );
+    expect(find.byKey(const ValueKey('history button')), findsNothing);
+    for (final k in ['1', '2', 'equals', '3', 'add']) {
+      await tap(tester, k);
+    }
+    expect(lineText(tester, 'stack x'), '15');
+    expect(lineText(tester, 'stack y'), '0');
+    await tester.tap(find.byKey(const ValueKey('stack key swap')));
+    await tester.pump();
+    expect(lineText(tester, 'stack x'), '0');
+    expect(lineText(tester, 'stack y'), '15');
+  });
+
+  testWidgets('Convert: 248 x 444, values and swap (kit Convert)', (
+    tester,
+  ) async {
+    await pumpExtra(tester, CalcExtra.convert);
+    expect(
+      tester.getRect(find.byKey(const ValueKey('calculator basic'))),
+      const Rect.fromLTWH(0, 0, 248, 444),
+    );
+    expect(
+      tester.getRect(key('backspace')),
+      const Rect.fromLTWH(16, 156, 48, 48),
+    );
+    expect(lineText(tester, 'convert from value'), '0');
+    await tap(tester, '1');
+    await tap(tester, '0');
+    // km → mi by default.
+    expect(lineText(tester, 'convert from value'), '10');
+    expect(lineText(tester, 'convert to value'), '6.21371192');
+    await tester.tap(find.byKey(const ValueKey('swap units')));
+    await tester.pump();
+    expect(lineText(tester, 'convert from value'), '6.21371192');
+  });
+
+  testWidgets('Convert: the unit picker chooses another category', (
+    tester,
+  ) async {
+    await pumpExtra(tester, CalcExtra.convert);
+    await tap(tester, '1');
+    await tester.tap(find.byKey(const ValueKey('from unit')));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byKey(const ValueKey('category Temperature')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('unit f')));
+    await tester.pump(const Duration(milliseconds: 500));
+    // Fahrenheit → the category's other default unit, Celsius would be the first: °F stays.
+    expect(find.byKey(const ValueKey('unit f')), findsNothing);
+    expect(lineText(tester, 'convert from value'), '1');
+  });
+
+  testWidgets('first launch: the tip over the Mode button, shown once', (
+    tester,
+  ) async {
+    final settings = AppSettings(null);
+    await pumpExtra(tester, CalcExtra.none, settings: settings);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Mode menu'), findsOneWidget);
+    expect(settings.tipShown, isTrue);
+    await tester.tap(find.byKey(const ValueKey('tip dismiss')));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Mode menu'), findsNothing);
   });
 }

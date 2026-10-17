@@ -7,6 +7,7 @@ import 'engine/calculator.dart';
 import 'engine/expression.dart';
 import 'engine/format.dart';
 import 'engine/programmer.dart';
+import 'engine/rpn.dart';
 import 'glyphs.dart';
 import 'metrics.dart';
 
@@ -332,6 +333,51 @@ List<List<KeySpec>> programmerKeys(ProgrammerCalculator p, KeyTexts t) {
       digit('0'),
       KeySpec('digits 00', KeyRole.digit, _text('00'), () => p.digits('00')),
       KeySpec('equals', KeyRole.operator, _glyph(Glyph.equals), p.equals),
+    ],
+  ];
+}
+
+/// The basic keypad in RPN: "=" is Enter, the operators combine y and x (kit `Apps/Calculator/RPN`).
+List<List<KeySpec>> rpnKeys(RpnCalculator c, NumberStyle style, KeyTexts t) {
+  KeySpec digit(String d) =>
+      KeySpec(d, KeyRole.digit, _text(d), () => c.digit(d));
+  KeySpec op(String id, Glyph g, BinOp o) =>
+      KeySpec(id, KeyRole.operator, _glyph(g), () => c.operator(o));
+  return [
+    [
+      KeySpec(
+        'backspace',
+        KeyRole.function,
+        _glyph(Glyph.backspace),
+        c.backspace,
+      ),
+      KeySpec(
+        'clear',
+        KeyRole.function,
+        _text(c.showsClear ? t.clear : t.clearAll),
+        c.clear,
+      ),
+      KeySpec('percent', KeyRole.function, _text('%'), c.percent),
+      op('divide', Glyph.divide, BinOp.divide),
+    ],
+    [
+      digit('7'),
+      digit('8'),
+      digit('9'),
+      op('multiply', Glyph.multiply, BinOp.multiply),
+    ],
+    [
+      digit('4'),
+      digit('5'),
+      digit('6'),
+      op('subtract', Glyph.minus, BinOp.subtract),
+    ],
+    [digit('1'), digit('2'), digit('3'), op('add', Glyph.plus, BinOp.add)],
+    [
+      KeySpec('negate', KeyRole.digit, _glyph(Glyph.plusMinus), c.negate),
+      digit('0'),
+      KeySpec('decimal', KeyRole.digit, _text(style.decimal), c.decimalPoint),
+      KeySpec('equals', KeyRole.operator, _glyph(Glyph.equals), c.enter),
     ],
   ];
 }
