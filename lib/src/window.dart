@@ -441,11 +441,10 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      height: AmalfiToolbarMetrics.toolbarHeight,
+                    // The window background moves the window; the toolbar, the display and the
+                    // sidebar carry their own drag areas, as these cover the background.
+                    const Positioned.fill(
+                      key: ValueKey('window drag area'),
                       child: WindowDragArea(child: SizedBox.expand()),
                     ),
                     // Kit `Toolbar Basic|Sci|Prog`: the controls piece (the compositor draws
@@ -455,33 +454,36 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                       left: 0,
                       right: 0,
                       top: 0,
-                      child: AmalfiToolbar(
-                        surface: AmalfiToolbarSurface.none,
-                        padding: const EdgeInsets.only(right: 8),
-                        active: _active,
-                        children: [
-                          const SizedBox(width: controlsWidth),
-                          if (!programmerMode)
+                      child: WindowDragArea(
+                        key: const ValueKey('toolbar drag area'),
+                        child: AmalfiToolbar(
+                          surface: AmalfiToolbarSurface.none,
+                          padding: const EdgeInsets.only(right: 8),
+                          active: _active,
+                          children: [
+                            const SizedBox(width: controlsWidth),
+                            if (!programmerMode)
+                              AmalfiToolbarPiece(
+                                child: AmalfiToolbarButton(
+                                  key: const ValueKey('history button'),
+                                  semanticLabel: l.sidebarButton,
+                                  icon: const AmalfiSymbol('sidebar'),
+                                  onPressed: toggleHistory,
+                                ),
+                              ),
+                            const AmalfiSpacerPiece(),
                             AmalfiToolbarPiece(
-                              child: AmalfiToolbarButton(
-                                key: const ValueKey('history button'),
-                                semanticLabel: l.sidebarButton,
-                                icon: const AmalfiSymbol('sidebar'),
-                                onPressed: toggleHistory,
+                              child: Builder(
+                                builder: (button) => AmalfiToolbarButton(
+                                  key: const ValueKey('mode button'),
+                                  semanticLabel: l.modeButton,
+                                  icon: const AmalfiSymbol('ellipsis'),
+                                  onPressed: () => _openModeMenu(button, l),
+                                ),
                               ),
                             ),
-                          const AmalfiSpacerPiece(),
-                          AmalfiToolbarPiece(
-                            child: Builder(
-                              builder: (button) => AmalfiToolbarButton(
-                                key: const ValueKey('mode button'),
-                                semanticLabel: l.modeButton,
-                                icon: const AmalfiSymbol('ellipsis'),
-                                onPressed: () => _openModeMenu(button, l),
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     if (sidebar) ...[
@@ -507,24 +509,27 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                       right: displayPadding,
                       top: 0,
                       height: top,
-                      child: Display(
-                        main: error
-                            ? l.error
-                            : programmerMode
-                            ? programmer.mainText()
-                            : decimal.mainText(_style),
-                        upper: programmerMode
-                            ? null
-                            : decimal.upperText(_style),
-                        suffix: programmerMode && !error
-                            ? '${programmer.base}'
-                            : null,
-                        indicator: programmerMode
-                            ? programmer.character()
-                            : mode == CalcMode.scientific &&
-                                  decimal.angle == AngleUnit.radians
-                            ? l.radiansIndicator
-                            : null,
+                      child: WindowDragArea(
+                        key: const ValueKey('display drag area'),
+                        child: Display(
+                          main: error
+                              ? l.error
+                              : programmerMode
+                              ? programmer.mainText()
+                              : decimal.mainText(_style),
+                          upper: programmerMode
+                              ? null
+                              : decimal.upperText(_style),
+                          suffix: programmerMode && !error
+                              ? '${programmer.base}'
+                              : null,
+                          indicator: programmerMode
+                              ? programmer.character()
+                              : mode == CalcMode.scientific &&
+                                    decimal.angle == AngleUnit.radians
+                              ? l.radiansIndicator
+                              : null,
+                        ),
                       ),
                     ),
                     if (programmerMode)

@@ -336,4 +336,32 @@ void main() {
     expect(fill(KeyRole.digit, active: false), const Color(0xFF4D4D4E));
     expect(fill(KeyRole.scientific, toggled: true), const Color(0xFF7E7E7F));
   });
+
+  testWidgets('the toolbar, the display and the background are drag areas', (
+    tester,
+  ) async {
+    await pump(tester);
+    for (final k in ['toolbar', 'display', 'window']) {
+      expect(find.byKey(ValueKey('$k drag area')), findsOneWidget);
+    }
+    // The toolbar strip is covered by the toolbar's drag area, not only the background.
+    final bar = tester.getRect(find.byKey(const ValueKey('toolbar drag area')));
+    expect(bar.top, 0);
+    expect(bar.height, greaterThanOrEqualTo(52));
+    // The Mode button stays a button inside it.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('toolbar drag area')),
+        matching: find.byKey(const ValueKey('mode button')),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the history sidebar keeps a drag area', (tester) async {
+    await pump(tester, size: const Size(900, 600));
+    await tester.tap(find.byKey(const ValueKey('history button')));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('history drag area')), findsOneWidget);
+  });
 }

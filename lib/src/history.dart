@@ -207,86 +207,106 @@ class HistorySidebar extends StatelessWidget {
     Widget rule() => ColoredBox(color: line, child: const SizedBox(height: 1));
     return ColoredBox(
       color: colors.calculator.sidebar,
-      child: ListView.builder(
-        key: const ValueKey('history list'),
-        padding: const EdgeInsets.only(top: HistoryMetrics.topInset),
-        itemCount: rows.length,
-        itemBuilder: (context, i) {
-          final row = rows[i];
-          final hasNext = i + 1 < rows.length;
-          const side = EdgeInsets.symmetric(horizontal: HistoryMetrics.padding);
-          switch (row) {
-            case _Header():
-              return Padding(
-                padding: side,
-                child: SizedBox(
-                  height: HistoryMetrics.headerHeight,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // The rule under the last record of the period above (kit: it is at the
-                      // top of the header).
-                      if (i > 0)
-                        Positioned(left: 0, right: 0, top: 0, child: rule()),
-                      Text(
-                        _title(l, row.period),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AmalfiType.headline(color: colors.textTertiary),
-                      ),
-                    ],
-                  ),
-                ),
+      // The sidebar's empty space (below the rows, in the top inset) moves the window.
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            key: ValueKey('history drag area'),
+            child: WindowDragArea(child: SizedBox.expand()),
+          ),
+          ListView.builder(
+            key: const ValueKey('history list'),
+            padding: const EdgeInsets.only(top: HistoryMetrics.topInset),
+            itemCount: rows.length,
+            itemBuilder: (context, i) {
+              final row = rows[i];
+              final hasNext = i + 1 < rows.length;
+              const side = EdgeInsets.symmetric(
+                horizontal: HistoryMetrics.padding,
               );
-            case _Record():
-              final next = hasNext ? rows[i + 1] : null;
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onSecondaryTapUp: (d) =>
-                    _menu(context, d.globalPosition, row.record),
-                child: Padding(
-                  padding: side,
-                  child: SizedBox(
-                    height:
-                        HistoryMetrics.recordHeight +
-                        (next is _Record ? HistoryMetrics.recordGap : 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          height: 14,
-                          child: Text(
-                            row.record.expression,
+              switch (row) {
+                case _Header():
+                  return Padding(
+                    padding: side,
+                    child: SizedBox(
+                      height: HistoryMetrics.headerHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // The rule under the last record of the period above (kit: it is at the
+                          // top of the header).
+                          if (i > 0)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              child: rule(),
+                            ),
+                          Text(
+                            _title(l, row.period),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.left,
-                            style: AmalfiType.caption(
-                              color: colors.textSecondary,
+                            style: AmalfiType.headline(
+                              color: colors.textTertiary,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        SizedBox(
-                          height: 18,
-                          child: Text(
-                            row.record.result,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: AmalfiType.body(color: colors.textPrimary),
-                          ),
-                        ),
-                        if (next is _Record) ...[
-                          const SizedBox(height: 18),
-                          rule(),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              );
-          }
-        },
+                  );
+                case _Record():
+                  final next = hasNext ? rows[i + 1] : null;
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onSecondaryTapUp: (d) =>
+                        _menu(context, d.globalPosition, row.record),
+                    child: Padding(
+                      padding: side,
+                      child: SizedBox(
+                        height:
+                            HistoryMetrics.recordHeight +
+                            (next is _Record ? HistoryMetrics.recordGap : 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                              height: 14,
+                              child: Text(
+                                row.record.expression,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.left,
+                                style: AmalfiType.caption(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              height: 18,
+                              child: Text(
+                                row.record.result,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: AmalfiType.body(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            if (next is _Record) ...[
+                              const SizedBox(height: 18),
+                              rule(),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
