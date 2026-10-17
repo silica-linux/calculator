@@ -656,15 +656,6 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                         width: HistoryMetrics.width,
                         child: HistorySidebar(store: history, now: _now),
                       ),
-                      Positioned(
-                        left: HistoryMetrics.width,
-                        top: 0,
-                        bottom: 0,
-                        width: 1,
-                        child: ColoredBox(
-                          color: AmalfiTheme.of(context).colors.lineSeparator,
-                        ),
-                      ),
                     ],
                     // Kit `Toolbar Basic|Sci|Prog`: the controls piece (the compositor draws
                     // the window buttons there), the History toggle (not in the programmer
@@ -680,7 +671,13 @@ class CalculatorWindowState extends State<CalculatorWindow> {
                           padding: const EdgeInsets.only(right: 8),
                           active: _active,
                           children: [
-                            const SizedBox(width: controlsWidth),
+                            // Open, the toggle moves into the sidebar's title bar, 8 from its
+                            // edge (a 44 pt piece at x 168 of the 220 pt sidebar, as in Mail).
+                            SizedBox(
+                              width: sidebar
+                                  ? HistoryMetrics.width - historyToggleInset
+                                  : controlsWidth,
+                            ),
                             if (!programmerMode && !rpnMode)
                               AmalfiToolbarPiece(
                                 child: AmalfiToolbarButton(

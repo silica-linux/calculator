@@ -37,6 +37,9 @@ const Map<CalcMode, Size> windowSize = {
 /// kit's `Controls` piece).
 const double controlsWidth = 96;
 
+/// The history toggle piece (44 pt) and the 8 pt after it, from the sidebar's trailing edge.
+const double historyToggleInset = 52;
+
 /// Display: the text box is 40 pt high at y 68, 16 pt from each side (`Display/Primary`,
 /// Inter Bold 34/40, right-aligned). The expression after "=" sits in the strip above it.
 const double displayPadding = 16;
